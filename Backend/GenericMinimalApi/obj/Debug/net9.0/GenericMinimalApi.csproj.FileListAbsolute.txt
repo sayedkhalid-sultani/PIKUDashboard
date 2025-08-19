@@ -175,3 +175,4 @@ C:\ReposatoryAsp.netCore\V2\backend\genericminimalapi\obj\Debug\net9.0\GenericMi
 C:\ReposatoryAsp.netCore\V2\backend\genericminimalapi\obj\Debug\net9.0\GenericMinimalApi.genruntimeconfig.cache
 C:\ReposatoryAsp.netCore\V2\backend\genericminimalapi\obj\Debug\net9.0\ref\GenericMinimalApi.dll
 C:\ReposatoryAsp.netCore\V2\Backend\GenericMinimalApi\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
+C:\ReposatoryAsp.netCore\V2\Backend\GenericMinimalApi\obj\Debug\net9.0\GenericMinimalApi.sourcelink.json
