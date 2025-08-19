@@ -17,7 +17,6 @@ function App() {
         <BrowserRouter>
           <AuthRefreshGate />
           <Spinner />
-
           <Suspense
             fallback={<div className="p-6 text-slate-500">Loading…</div>}
           >
