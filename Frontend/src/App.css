@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* styles for tooltips */
+.ttBox {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+}
+.ttTitle {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.ttRow {
+  display: flex;
+  align-items: center;
+}
