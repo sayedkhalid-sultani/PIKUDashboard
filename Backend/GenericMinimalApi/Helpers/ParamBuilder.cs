@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Reflection;
 using Dapper;
 
@@ -6,34 +8,42 @@ namespace GenericMinimalApi.Helpers
 {
     public static class ParamBuilder
     {
+        /// <summary>
+        /// Builds DynamicParameters from any DTO.
+        /// - Skips null values (so you only send what you provided).
+        /// - If property name ends with "Ids" and value is a list of ints,
+        ///   it will be sent as TVP (expects dbo.IntList with column [Id]).
+        /// </summary>
         public static DynamicParameters From<T>(T dto)
         {
             var dp = new DynamicParameters();
-            if (dto == null)
-                return dp;
+            if (dto == null) return dp;
 
-            // Only public instance properties
-            var props = dto.GetType()
-                           .GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (var prop in props)
+            foreach (var prop in dto.GetType()
+                                    .GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
-                // **Skip** indexer properties (they have GetIndexParameters().Length > 0)
-                if (prop.GetIndexParameters().Length > 0)
+                if (prop.GetIndexParameters().Length > 0 || !prop.CanRead)
                     continue;
 
-                // Should have a public getter
-                if (!prop.CanRead)
-                    continue;
+                var name = prop.Name;
+                var value = prop.GetValue(dto);
 
-                // Read the value
-                var value = prop.GetValue(dto, null);
+                if (value == null) 
+                    continue; // ✅ skip if not provided
 
-                // Skip nulls (optional: you can also skip defaults if you want)
-                if (value == null)
-                    continue;
+                if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase) && value is IEnumerable<int> ids)
+                {
+                    var tvp = new DataTable();
+                    tvp.Columns.Add("Id", typeof(int));
+                    foreach (var id in ids)
+                        tvp.Rows.Add(id);
 
-                dp.Add(prop.Name, value);
+                    dp.Add(name, tvp.AsTableValuedParameter("dbo.IntList"));
+                }
+                else
+                {
+                    dp.Add(name, value);
+                }
             }
 
             return dp;
