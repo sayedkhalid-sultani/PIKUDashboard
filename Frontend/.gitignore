@@ -24,3 +24,31 @@ dist-ssr
 *.sw?
 bin/
 obj/
+Backend/GenericMinimalApi/bin/Debug
+
+
+# Build results
+bin/
+obj/
+
+# Visual Studio cache/options
+.vs/
+
+# Rider / JetBrains
+.idea/
+
+# User-specific files
+*.user
+*.suo
+
+# DLLs and executables
+*.dll
+*.exe
+*.pdb
+
+# Logs
+*.log
+
+
+
+appsettings.json

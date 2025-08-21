@@ -9,7 +9,7 @@ using GenericMinimalApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuration
-builder.Configuration.AddEnvironmentVariables();
+
 
 // Service Registrations
 builder.Services
@@ -64,5 +64,8 @@ app.UseGlobalExceptionMiddleware();
 app.MapAuth();
 app.MapIndicators();
 app.MapUserEndpoints();
+
+//Dto Generators
+app.MapDtoGeneratorEndpoint(); 
 
 app.Run();
