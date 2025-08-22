@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "LsZeQLVOyk0=",
+  "dgSpecHash": "zokAqEdGGs4=",
   "success": true,
-  "projectFilePath": "C:\\ReposatoryAsp.netCore\\V2\\Backend\\GenericMinimalApi\\GenericMinimalApi.csproj",
+  "projectFilePath": "C:\\ReposatoryAsp.netCore\\V2\\backend\\GenericMinimalApi\\GenericMinimalApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\sayed-khalid.sultani\\.nuget\\packages\\azure.core\\1.44.1\\azure.core.1.44.1.nupkg.sha512",
     "C:\\Users\\sayed-khalid.sultani\\.nuget\\packages\\azure.identity\\1.13.2\\azure.identity.1.13.2.nupkg.sha512",

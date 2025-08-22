@@ -1,7 +1,5 @@
 // StoredProcedureEndpointExtensions.cs
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
 using System.Security.Claims;
@@ -10,10 +8,6 @@ using Dapper;
 using GenericMinimalApi.Filters;     // TransactionFilter
 using GenericMinimalApi.Models;      // ApiResponse<T>
 using GenericMinimalApi.Services;    // IDapperService
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;      // [AsParameters]
-using Microsoft.AspNetCore.Routing;
 
 namespace GenericMinimalApi.Extensions
 {
