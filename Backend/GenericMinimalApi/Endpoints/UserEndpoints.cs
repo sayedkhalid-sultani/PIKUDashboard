@@ -42,7 +42,8 @@ namespace GenericMinimalApi.Services
 
             // GET /api/users/options?Dropdown=Departments
             // GET /api/users/options?Dropdown=SubDepartments&ParentIds=1,2
-            r.MapStoredProcedureGetList<LookupOptionDto, LookupFilterDto>("/options", "GetDropDownOptions")
+
+            r.MapStoredProcedureGetList<LookupOptionDto,LookupFilterDto>("/options", "GetDropDownOptions")
              .WithName("Users_Options")
              .WithTags("Users", "Lookups")
              .WithSummary("Dropdown options for Users screens")

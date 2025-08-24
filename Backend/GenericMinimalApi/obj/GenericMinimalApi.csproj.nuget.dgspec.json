@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\ReposatoryAsp.netCore\\V2\\backend\\GenericMinimalApi\\GenericMinimalApi.csproj": {}
+    "C:\\ReposatoryAsp.netCore\\V2\\backend\\genericminimalapi\\GenericMinimalApi.csproj": {}
   },
   "projects": {
-    "C:\\ReposatoryAsp.netCore\\V2\\backend\\GenericMinimalApi\\GenericMinimalApi.csproj": {
+    "C:\\ReposatoryAsp.netCore\\V2\\backend\\genericminimalapi\\GenericMinimalApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\ReposatoryAsp.netCore\\V2\\backend\\GenericMinimalApi\\GenericMinimalApi.csproj",
+        "projectUniqueName": "C:\\ReposatoryAsp.netCore\\V2\\backend\\genericminimalapi\\GenericMinimalApi.csproj",
         "projectName": "GenericMinimalApi",
-        "projectPath": "C:\\ReposatoryAsp.netCore\\V2\\backend\\GenericMinimalApi\\GenericMinimalApi.csproj",
+        "projectPath": "C:\\ReposatoryAsp.netCore\\V2\\backend\\genericminimalapi\\GenericMinimalApi.csproj",
         "packagesPath": "C:\\Users\\sayed-khalid.sultani\\.nuget\\packages\\",
-        "outputPath": "C:\\ReposatoryAsp.netCore\\V2\\backend\\GenericMinimalApi\\obj\\",
+        "outputPath": "C:\\ReposatoryAsp.netCore\\V2\\backend\\genericminimalapi\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

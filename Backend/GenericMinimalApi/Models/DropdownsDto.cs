@@ -4,7 +4,7 @@ namespace GenericMinimalApi.Models
     public sealed class LookupFilterDto
 {
     public string? Dropdown { get; set; }
-     public int[]?  ParentIds { get; set; } 
+     public IEnumerable<int>?  ParentIds { get; set; } 
 }
 
     public sealed class LookupOptionDto

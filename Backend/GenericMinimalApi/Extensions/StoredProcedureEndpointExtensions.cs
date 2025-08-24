@@ -89,19 +89,20 @@ namespace GenericMinimalApi.Extensions
                 // skip indexers / unreadable props
                 if (prop.GetIndexParameters().Length > 0 || !prop.CanRead) continue;
 
-                var name  = prop.Name;
+                var name = prop.Name;
                 var value = prop.GetValue(dtoOrFilter);
 
                 // ← Skip nulls: don't add unless client actually sent it
                 if (value == null) continue;
 
-                if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase))
+            if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase))
                 {
-                    var ids = TryToIntEnumerable(value);
-                    if (ids != null) { AddIntListTvp(p, name, ids); continue; }
+                    var ids = TryToIntEnumerable(value) ?? Array.Empty<int>();
+                    AddIntListTvp(p, name, ids);
+                    continue;
                 }
-
                 p.Add(name, value);
+                
             }
 
             return p;
@@ -153,10 +154,11 @@ namespace GenericMinimalApi.Extensions
                 var name = kv.Key;
                 var val  = FromJson(kv.Value);
 
-                if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase))
+               if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase))
                 {
-                    var ids = TryToIntEnumerable(val);
-                    if (ids != null) { AddIntListTvp(p, name, ids); continue; }
+                    var ids = TryToIntEnumerable(val) ?? Array.Empty<int>();
+                    AddIntListTvp(p, name, ids);
+                    continue;
                 }
 
                 // lenient: if array was sent where scalar expected, take first
@@ -332,6 +334,10 @@ namespace GenericMinimalApi.Extensions
             b.ApplyAuth(r.Opts.RequiresAuthorization, r.Opts.ReadRoles, r.Opts.AllowedRoles);
             return b;
         }
+
+
+
+        
 
         public static RouteHandlerBuilder MapStoredProcedureGetById<TItem>(this SpRoute r, string route, string procedure)
             where TItem : class
