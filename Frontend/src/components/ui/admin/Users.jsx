@@ -2,17 +2,27 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import SmartDataTable from "../../shared/SmartDataTable";
 import { cls } from "../../../utils/SmartDataTableui";
-import { Get, Delete } from "../../../api/controllers/controller";
+import { Post, Delete } from "../../../api/controllers/controller";
 import { useAppQuery } from "../../../hooks/Shared/useAppQuery";
 import { useAppMutation } from "../../../hooks/Shared/useAppMutation";
 
 export default function Users() {
   const navigate = useNavigate();
 
-  // fetch list
-  const { data: resp, refetch } = useAppQuery(
+  // Fetch list via POST /api/users/search (CommonFilterDto body)
+  const {
+    data: resp,
+    refetch,
+    isLoading,
+    isError,
+    error,
+  } = useAppQuery(
     "users",
-    () => Get("/api/users"),
+    () =>
+      Post("/api/users/search", {
+        // send empty body for "all users" or add filters/paging here
+        // e.g. { Page: 1, PageSize: 20 }
+      }),
     {
       refetchOnMount: "always",
       refetchOnWindowFocus: true,
@@ -20,20 +30,26 @@ export default function Users() {
       staleTime: 0,
       gcTime: 0,
       keepPreviousData: false,
-      structuralSharing: false, // <— important: don’t reuse old array refs
+      structuralSharing: false,
     }
   );
-  const rows = useMemo(() => resp?.data ?? resp ?? [], [resp]);
 
+  // Extract rows from multi-result shape: { data: { Items: [...] } }
+  const rows = useMemo(() => {
+    const data = resp?.data ?? resp;
+    return Array.isArray(data?.Items) ? data.Items : [];
+  }, [resp]);
+
+  // Stable key for table to force re-render when dataset changes
   const tableKey = useMemo(
     () => `users:${rows.length}:${rows.map((r) => r.id).join(",")}`,
     [rows]
   );
 
-  // delete
+  // Delete endpoint remains: DELETE /api/users/{id}
   const deleteMutation = useAppMutation(
     "deleteUser",
-    async (row) => Delete(`/api/users/${row.id}`), // adjust if your endpoint differs
+    async (row) => Delete(`/api/users/${row.Id}`),
     { onSuccess: () => refetch() }
   );
 
@@ -51,20 +67,28 @@ export default function Users() {
         </div>
       </div>
 
-      <SmartDataTable
-        key={tableKey}
-        title="User List"
-        data={rows}
-        hiddenKeys={["id"]}
-        filterKeys={["username", "role"]}
-        onEdit={(row) => navigate(`/admin/users/edit/${row.id}`)}
-        onDelete={(row) => {
-          if (window.confirm(`Delete ${row.username}?`)) {
-            deleteMutation.mutate(row);
-          }
-        }}
-        dense
-      />
+      {isLoading ? (
+        <div className="py-10 text-center text-slate-500">Loading…</div>
+      ) : isError ? (
+        <div className="py-10 text-center text-red-600">
+          Failed to load users{error?.message ? `: ${error.message}` : ""}.
+        </div>
+      ) : (
+        <SmartDataTable
+          key={tableKey}
+          title="User List"
+          data={rows}
+          hiddenKeys={["id"]}
+          filterKeys={["Username", "Role"]}
+          onEdit={(row) => navigate(`/admin/users/edit/${row.id}`)}
+          onDelete={(row) => {
+            if (window.confirm(`Delete ${row.Username}?`)) {
+              deleteMutation.mutate(row);
+            }
+          }}
+          dense
+        />
+      )}
     </div>
   );
 }

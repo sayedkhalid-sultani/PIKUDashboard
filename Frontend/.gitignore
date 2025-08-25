@@ -50,5 +50,8 @@ obj/
 *.log
 
 
-
-appsettings.json
+**/appsettings.*.json
+**/bin/
+**/obj/
+**/Debug/
+**/Release/

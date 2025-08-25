@@ -8,6 +8,7 @@ using Dapper;
 using GenericMinimalApi.Filters;     // TransactionFilter
 using GenericMinimalApi.Models;      // ApiResponse<T>
 using GenericMinimalApi.Services;    // IDapperService
+using Microsoft.AspNetCore.Mvc;      // [AsParameters]
 
 namespace GenericMinimalApi.Extensions
 {
@@ -44,9 +45,7 @@ namespace GenericMinimalApi.Extensions
                 var parts = s.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                 var list = new List<int>();
                 foreach (var part in parts)
-                {
                     if (int.TryParse(part.Trim(), out var n)) list.Add(n);
-                }
                 return list.Count > 0 ? list : null;
             }
 
@@ -77,7 +76,7 @@ namespace GenericMinimalApi.Extensions
         }
 
         // Build params from a DTO/object.
-        // ✅ SKIPS NULLS so only explicitly-provided properties are sent to SQL.
+        // ✅ Skips NULLs so only explicitly-provided properties are sent to SQL.
         // Any "*Ids" property is treated as TVP (dbo.IntList).
         private static DynamicParameters BuildParamsWithTvps(object? dtoOrFilter)
         {
@@ -86,86 +85,20 @@ namespace GenericMinimalApi.Extensions
 
             foreach (var prop in dtoOrFilter.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
-                // skip indexers / unreadable props
                 if (prop.GetIndexParameters().Length > 0 || !prop.CanRead) continue;
 
-                var name = prop.Name;
+                var name  = prop.Name;
                 var value = prop.GetValue(dtoOrFilter);
-
-                // ← Skip nulls: don't add unless client actually sent it
                 if (value == null) continue;
 
-            if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase))
+                if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase))
                 {
                     var ids = TryToIntEnumerable(value) ?? Array.Empty<int>();
                     AddIntListTvp(p, name, ids);
                     continue;
                 }
+
                 p.Add(name, value);
-                
-            }
-
-            return p;
-        }
-
-        // Build params from JSON dictionary (when using raw dictionary body).
-        // Only keys present in JSON are added (fits "send only what I provided").
-        private static object? FromJson(JsonElement e)
-        {
-            switch (e.ValueKind)
-            {
-                case JsonValueKind.Null:
-                case JsonValueKind.Undefined: return null;
-
-                case JsonValueKind.Number:
-                    if (e.TryGetInt32(out var i)) return i;
-                    if (e.TryGetInt64(out var l)) return l;
-                    if (e.TryGetDecimal(out var d)) return d;
-                    return e.GetDouble();
-
-                case JsonValueKind.True:
-                case JsonValueKind.False: return e.GetBoolean();
-
-                case JsonValueKind.String:
-                    if (e.TryGetDateTime(out var dt)) return dt;
-                    return e.GetString();
-
-                case JsonValueKind.Array:
-                    var list = new List<object?>();
-                    foreach (var item in e.EnumerateArray()) list.Add(FromJson(item));
-                    return list;
-
-                case JsonValueKind.Object:
-                    var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var prop in e.EnumerateObject()) dict[prop.Name] = FromJson(prop.Value);
-                    return dict;
-
-                default: return null;
-            }
-        }
-
-        private static DynamicParameters BuildParamsWithTvps(IDictionary<string, JsonElement> dict)
-        {
-            var p = new DynamicParameters();
-            if (dict == null) return p;
-
-            foreach (var kv in dict)
-            {
-                var name = kv.Key;
-                var val  = FromJson(kv.Value);
-
-               if (name.EndsWith("Ids", StringComparison.OrdinalIgnoreCase))
-                {
-                    var ids = TryToIntEnumerable(val) ?? Array.Empty<int>();
-                    AddIntListTvp(p, name, ids);
-                    continue;
-                }
-
-                // lenient: if array was sent where scalar expected, take first
-                if (val is IList list && list.Count > 0)
-                    p.Add(name, list[0]);
-                else
-                    p.Add(name, val);
             }
 
             return p;
@@ -230,13 +163,12 @@ namespace GenericMinimalApi.Extensions
         public static SpRoute MapSpGroup(this IEndpointRouteBuilder app, StoredProcedureEndpointOptions opts)
             => new SpRoute(BuildGroup(app, opts), opts);
 
-        // ------------------------- Multi-result (UNDERSTANDABLE NAMES) -------------------------
+        // ------------------------- DTO-only Multi-result endpoints -------------------------
 
         /// <summary>
-        /// Maps a POST endpoint that calls a stored procedure returning multiple result sets
-        /// and returns them as a single object with named arrays. Filter body is a typed DTO (e.g., CommonFilterDto).
-        /// Any property ending with "*Ids" on the DTO is sent as TVP (dbo.IntList).
-        /// Only non-null properties are sent to SQL; @UserId is added automatically by the service.
+        /// POST endpoint that calls a stored procedure returning multiple result sets
+        /// and returns them as a single object with named arrays. Body binds to a typed DTO (TFilter).
+        /// Properties ending with "*Ids" are sent as TVP (dbo.IntList). Nulls are skipped.
         /// </summary>
         public static RouteHandlerBuilder MapStoredProcedureMultiResult<TFilter>(
             this SpRoute r,
@@ -258,7 +190,7 @@ namespace GenericMinimalApi.Extensions
                     procedure: procedure,
                     param: dp,
                     uow: null,
-                    userId: GetUserId(ctx),   // ← always include UserId
+                    userId: GetUserId(ctx),
                     normalized
                 );
 
@@ -272,86 +204,40 @@ namespace GenericMinimalApi.Extensions
         }
 
         /// <summary>
-        /// Same as MapStoredProcedureMultiResult&lt;TFilter&gt; but accepts a raw JSON object
-        /// (Dictionary&lt;string, JsonElement&gt;) as the filter. Useful for fully dynamic calls.
+        /// (Optional) GET variant that binds TFilter from query string; useful for cacheable/readable URLs.
         /// </summary>
-        public static RouteHandlerBuilder MapStoredProcedureMultiResult(
+        public static RouteHandlerBuilder MapStoredProcedureMultiResultGet<TFilter>(
             this SpRoute r,
             string route,
             string procedure,
             params (string? name, Type type)[] resultSets)
+            where TFilter : class, new()
         {
             var normalized = Normalize(resultSets);
 
-            var b = r.Group.MapPost(route, async (
-                IDictionary<string, JsonElement>? filter,
+            var b = r.Group.MapGet(route, async (
+                [AsParameters] TFilter filter,
                 IDapperService d,
                 HttpContext ctx) =>
             {
-                var dp = filter == null ? new DynamicParameters() : BuildParamsWithTvps(filter);
+                var dp = BuildParamsWithTvps(filter);
 
                 var dict = await d.QueryMultipleAsDictionaryAsync(
                     procedure: procedure,
                     param: dp,
                     uow: null,
-                    userId: GetUserId(ctx),   // ← always include UserId
+                    userId: GetUserId(ctx),
                     normalized
                 );
 
                 return Results.Ok(ApiResponse<object>.Ok(dict));
             });
 
-            b.ApplyAuth(r.Opts.RequiresAuthorization, r.Opts.ReadRoles, r.Opts.AllowedRoles)
-             .MaybeTx(r.Opts.RequiresTransaction);
-
-            return b;
-        }
-
-        // ------------------------- (Optional) Single-result helpers kept for completeness -------------------------
-
-        public static RouteHandlerBuilder MapStoredProcedureGetList<TItem>(this SpRoute r, string route, string procedure)
-            where TItem : class
-        {
-            var b = r.Group.MapGet(route, async (IDapperService d, HttpContext ctx) =>
-            {
-                var rows = await d.QueryAsync<TItem>(procedure, param: null, uow: null, userId: GetUserId(ctx));
-                return Results.Ok(ApiResponse<IEnumerable<TItem>>.Ok(rows));
-            });
             b.ApplyAuth(r.Opts.RequiresAuthorization, r.Opts.ReadRoles, r.Opts.AllowedRoles);
             return b;
         }
 
-        public static RouteHandlerBuilder MapStoredProcedureGetList<TItem, TFilter>(this SpRoute r, string route, string procedure)
-            where TItem : class
-            where TFilter : class, new()
-        {
-            var b = r.Group.MapGet(route, async ([AsParameters] TFilter filter, IDapperService d, HttpContext ctx) =>
-            {
-                var dp = BuildParamsWithTvps(filter);
-                var rows = await d.QueryAsync<TItem>(procedure, dp, uow: null, userId: GetUserId(ctx));
-                return Results.Ok(ApiResponse<IEnumerable<TItem>>.Ok(rows));
-            });
-            b.ApplyAuth(r.Opts.RequiresAuthorization, r.Opts.ReadRoles, r.Opts.AllowedRoles);
-            return b;
-        }
-
-
-
-        
-
-        public static RouteHandlerBuilder MapStoredProcedureGetById<TItem>(this SpRoute r, string route, string procedure)
-            where TItem : class
-        {
-            var b = r.Group.MapGet(route, async (int id, IDapperService d, HttpContext ctx) =>
-            {
-                var row = await d.QuerySingleAsync<TItem>(procedure, new { Id = id }, userId: GetUserId(ctx));
-                return row is null
-                    ? Results.NotFound(ApiResponse<object>.FailSingle("Not found."))
-                    : Results.Ok(ApiResponse<TItem>.Ok(row));
-            });
-            b.ApplyAuth(r.Opts.RequiresAuthorization, r.Opts.ReadRoles, r.Opts.AllowedRoles);
-            return b;
-        }
+        // ------------------------- Write helpers (Insert/Update/Delete) -------------------------
 
         public static RouteHandlerBuilder MapStoredProcedureInsert<TCreate>(this SpRoute r, string route, string procedure, Func<TCreate, object>? buildInsert = null)
             where TCreate : class

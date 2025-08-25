@@ -13,9 +13,20 @@ import Select from "react-select";
 import { useLocation } from "react-router-dom";
 import { Get, Post } from "../../api/controllers/controller";
 
-/* ───────── helpers ───────── */
+/* ───────── small utils to prevent loops ───────── */
 
+const arraysEqual = (a, b) => {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+};
 const isSelectType = (t) => t === "dropdown" || t === "multiselect";
+const isNumericField = (f) =>
+  (f?.valueType || "").toString().toLowerCase() === "number";
+
+/* ───────── helpers ───────── */
 
 const computeDepends = (fields) => {
   const set = new Set();
@@ -36,15 +47,32 @@ const labelOf = (o) =>
 const toReactOptions = (arr) =>
   (arr || []).map((o) => ({ value: valueOf(o), label: labelOf(o) }));
 
-// tolerant extraction: array | {data:[...]} | {data:{key:[...]}} | {key:[...]}
+// ensure option.value type matches field.valueType
+const normalizeOptionsForField = (field, arr) => {
+  if (!Array.isArray(arr)) return [];
+  if (!isNumericField(field)) return arr;
+  return arr.map((o) => {
+    const n = Number(o.value);
+    return Number.isFinite(n) ? { ...o, value: n } : o;
+  });
+};
+
+// tolerant extraction: array | {data:[...]} | {data:{key:[...]}} | {key:[...]} | {data:{Options:[...]}} | {Options:[...]}
 const extractOptions = (payload, field) => {
   if (!payload) return undefined;
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload.data)) return payload.data;
+
   const key = field.dataKey || field.name;
   if (payload.data && Array.isArray(payload.data[key]))
     return payload.data[key];
   if (Array.isArray(payload[key])) return payload[key];
+
+  // common backend for lookups
+  if (payload.data && Array.isArray(payload.data.Options))
+    return payload.data.Options;
+  if (Array.isArray(payload.Options)) return payload.Options;
+
   return undefined;
 };
 
@@ -64,7 +92,7 @@ const buildDefaultValues = (fields) => {
         dv[f.name] = f.defaultValue ?? "";
         break;
       case "dropdown":
-        dv[f.name] = f.defaultValue ?? null; // single-select uses null
+        dv[f.name] = f.defaultValue ?? null;
         break;
       case "multiselect":
         dv[f.name] = Array.isArray(f.defaultValue) ? f.defaultValue : [];
@@ -76,11 +104,9 @@ const buildDefaultValues = (fields) => {
   return dv;
 };
 
-// Match “…/options” anywhere (e.g., /api/users/options)
 const isOptionsRoute = (ep) =>
   typeof ep === "string" && /\/options(?:$|[/?#])/i.test(ep);
 
-// ── tolerant initial-value helpers ──
 const singularize = (s) =>
   typeof s === "string" && s.endsWith("s") ? s.slice(0, -1) : s;
 
@@ -108,8 +134,7 @@ const coerceToArray = (v) => {
   return [v];
 };
 
-// Coerce incoming server values into RHF raw shapes (null / [] / scalar)
-// Looks for: Name, NameId, singular(Name), singular(Name)Id (case-insensitive)
+// Incoming server values -> RHF shapes
 const normalizeInitialValues = (fields, values) => {
   if (!values) return {};
   const out = {};
@@ -132,35 +157,100 @@ const normalizeInitialValues = (fields, values) => {
       return Number.isFinite(n) ? n : null;
     };
 
-    if (f.type === "dropdown") {
-      if (v == null || v === "") {
-        out[name] = null;
+    if (isSelectType(f.type)) {
+      if (f.type === "dropdown") {
+        if (v == null || v === "") {
+          out[name] = null;
+          continue;
+        }
+        if (typeof v === "object") v = valueOf(v);
+        out[name] = wantNumber ? toNum(v) : String(v);
         continue;
       }
-      if (typeof v === "object") v = valueOf(v);
-      out[name] = wantNumber ? toNum(v) : String(v);
-      continue;
+      if (f.type === "multiselect") {
+        const arr = coerceToArray(v)
+          .map((x) => (typeof x === "object" ? valueOf(x) : x))
+          .map((x) => (wantNumber ? toNum(x) : String(x)))
+          .filter((x) => x !== null && x !== "");
+        out[name] = arr;
+        continue;
+      }
     }
 
-    if (f.type === "multiselect") {
-      const arr = coerceToArray(v)
-        .map((x) => (typeof x === "object" ? valueOf(x) : x))
-        .map((x) => (wantNumber ? toNum(x) : String(x)))
-        .filter((x) => x !== null && x !== "");
-      out[name] = arr;
-      continue;
-    }
-
-    // text/password/date: keep as-is
     out[name] = v ?? "";
   }
 
   return out;
 };
 
-// stable DOM ids for inputs/selects/labels
+// Read initial text labels for selects from the server payload
+const readInitialSelectText = (fields, values) => {
+  const out = {};
+  if (!values) return out;
+
+  const get = (obj, key) => {
+    if (!obj) return undefined;
+    if (key in obj) return obj[key];
+    const lower = Object.fromEntries(
+      Object.keys(obj).map((k) => [k.toLowerCase(), obj[k]])
+    );
+    return lower[key.toLowerCase()];
+  };
+
+  for (const f of fields) {
+    if (!isSelectType(f.type)) continue;
+    const name = f.name;
+    const s = singularize(name);
+
+    const candidates = [
+      name,
+      s,
+      `${name}Name`,
+      `${s}Name`,
+      `${name}_Name`,
+      `${s}_Name`,
+      `${name}Label`,
+      `${s}Label`,
+    ];
+
+    for (const key of candidates) {
+      const v = get(values, key);
+      if (typeof v === "string") {
+        out[name] = v; // single label
+        break;
+      }
+      if (Array.isArray(v) && v.every((x) => typeof x === "string")) {
+        out[name] = v; // multi labels
+        break;
+      }
+    }
+  }
+  return out;
+};
+
+// stable DOM ids
 const domId = (prefix, name) =>
   `${prefix}-${String(name || "field")}`.replace(/\s+/g, "-").toLowerCase();
+
+// coerce a value to the correct type for matching against options
+const coerceValueForField = (field, v) => {
+  if (!isNumericField(field)) return v == null ? null : String(v);
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : v;
+};
+
+const coerceArrayForField = (field, arr) => {
+  const input = Array.isArray(arr) ? arr : arr == null ? [] : [arr];
+  if (!isNumericField(field))
+    return input
+      .map((v) => (typeof v === "object" ? valueOf(v) : v))
+      .map((v) => String(v));
+  return input
+    .map((v) => (typeof v === "object" ? valueOf(v) : v))
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n));
+};
 
 /* ───────── component ───────── */
 
@@ -170,7 +260,7 @@ const DynamicForm = forwardRef(
       title,
       subtitle,
       fields = [],
-      validationSchema, // or `schema`
+      validationSchema,
       schema,
       onSubmit,
       isSubmitting = false,
@@ -179,26 +269,36 @@ const DynamicForm = forwardRef(
       resetOnSuccess = false,
       validationMode = "onSubmit",
       reactSelectProps = {},
-      initialValues = null, // server values for edit
-      enableReinitialize = true, // re-fill when initialValues change
-      disableUntilValid = false, // if true, disable submit until RHF deems valid
-      shouldFocusError = false, // prevent RHF from refocusing on first error
+      initialValues = null,
+      enableReinitialize = true,
+      disableUntilValid = false,
+      shouldFocusError = false,
     },
     ref
   ) => {
-    const location = useLocation(); // track current path
+    const location = useLocation();
 
     const effectiveSchema = validationSchema || schema || null;
     const resolver = effectiveSchema
       ? yupResolver(effectiveSchema, { abortEarly: false })
       : undefined;
 
-    // Initial defaults (field defaults + server overrides)
+    // defaults (field defaults + server overrides)
     const defaults = useMemo(() => {
       const base = buildDefaultValues(fields);
       const fromServer = normalizeInitialValues(fields, initialValues);
       return { ...base, ...fromServer };
     }, [fields, initialValues]);
+
+    // labels from the server to prefill selects when ids are missing
+    const initialSelectText = useMemo(
+      () => readInitialSelectText(fields, initialValues),
+      [fields, initialValues]
+    );
+    const initialSelectTextHash = useMemo(
+      () => JSON.stringify(initialSelectText),
+      [initialSelectText]
+    );
 
     const {
       register,
@@ -239,23 +339,14 @@ const DynamicForm = forwardRef(
 
     const [options, setOptions] = useState({}); // { [fieldName]: [{value,label}] }
     const latestReq = useRef({});
-    // per-field last fetch key to avoid StrictMode duplicate requests
     const lastFetchKeyRef = useRef({});
+    const clearedWhenDepsMissingRef = useRef({});
 
-    // 🔁 when the path changes, clear the per-field de-dupe keys so new page can refetch
+    // reset dedupe when route changes
     useEffect(() => {
       lastFetchKeyRef.current = {};
-      // Optional: clear values on route change
-      // fields.forEach((f) => {
-      //   if (isSelectType(f.type)) {
-      //     setValue(f.name, f.type === "multiselect" ? [] : null, {
-      //       shouldValidate: false,
-      //       shouldTouch: false,
-      //       shouldDirty: false,
-      //     });
-      //   }
-      // });
-    }, [location.pathname, fields, setValue]);
+      clearedWhenDepsMissingRef.current = {};
+    }, [location.pathname]);
 
     const submit = async (data) => {
       try {
@@ -284,22 +375,62 @@ const DynamicForm = forwardRef(
       [depKeys, depVals]
     );
     const depsHash = useMemo(() => JSON.stringify(depsObj), [depsObj]);
-    const depsStable = useMemo(() => JSON.parse(depsHash), [depsHash]);
 
-    /* ---------- inline options ---------- */
+    /* ---------- inline options (static arrays) ---------- */
     useEffect(() => {
       const map = {};
       fields.forEach((f) => {
         if (isSelectType(f.type) && Array.isArray(f.options)) {
-          map[f.name] = toReactOptions(f.options);
+          const arr = normalizeOptionsForField(f, toReactOptions(f.options));
+          map[f.name] = arr;
         }
       });
       if (Object.keys(map).length) setOptions((p) => ({ ...p, ...map }));
     }, [fields]);
 
-    /* ---------- remote options (Dropdown + ParentIds) ---------- */
+    /* ---------- remote options (optionsFetcher | optionsEndpoint) ---------- */
     useEffect(() => {
       let cancelled = false;
+      const deps = JSON.parse(depsHash);
+      const initialText = JSON.parse(initialSelectTextHash);
+
+      const tryPrefillByLabel = (f, arr) => {
+        const curr = getValues(f.name);
+        const isEmpty =
+          f.type === "multiselect"
+            ? !(Array.isArray(curr) && curr.length > 0)
+            : curr === null || curr === undefined || curr === "";
+        const want = initialText[f.name];
+        if (!isEmpty || !want) return;
+
+        if (f.type === "multiselect") {
+          const wants = Array.isArray(want) ? want : [want];
+          const lower = new Set(wants.map((x) => String(x).toLowerCase()));
+          const matches = arr
+            .filter((o) => lower.has(String(o.label).toLowerCase()))
+            .map((o) => o.value);
+          if (matches.length > 0) {
+            const coerced = coerceArrayForField(f, matches);
+            setValue(f.name, coerced, {
+              shouldValidate: false,
+              shouldTouch: false,
+              shouldDirty: false,
+            });
+          }
+        } else {
+          const match = arr.find(
+            (o) => String(o.label).toLowerCase() === String(want).toLowerCase()
+          );
+          if (match) {
+            const coerced = coerceValueForField(f, match.value);
+            setValue(f.name, coerced, {
+              shouldValidate: false,
+              shouldTouch: false,
+              shouldDirty: false,
+            });
+          }
+        }
+      };
 
       (async () => {
         const next = {};
@@ -307,53 +438,117 @@ const DynamicForm = forwardRef(
         for (const f of fields) {
           if (!isSelectType(f.type)) continue;
 
-          // resolve endpoint
-          let ep = f.optionsEndpoint;
-          if (typeof ep === "function") ep = ep(depsStable, location);
-          if (!ep) continue;
-
           const hasDeps = Array.isArray(f.dependsOn) && f.dependsOn.length > 0;
 
-          // wait for parent(s) to have values
-          if (!depsReady(f, depsStable)) {
-            setValue(f.name, f.type === "multiselect" ? [] : null, {
-              shouldValidate: false,
-              shouldTouch: false,
-              shouldDirty: false,
-            });
+          // Clear once while deps missing
+          if (hasDeps && !depsReady(f, deps)) {
+            const desired = f.type === "multiselect" ? [] : null;
+            const curr = getValues(f.name);
+            const currentArr =
+              f.type === "multiselect" ? coerceArrayForField(f, curr) : null;
+
+            const needsClear =
+              f.type === "multiselect"
+                ? !arraysEqual(currentArr, [])
+                : !(curr === null || curr === undefined || curr === "");
+
+            if (needsClear && !clearedWhenDepsMissingRef.current[f.name]) {
+              clearedWhenDepsMissingRef.current[f.name] = true;
+              setValue(f.name, desired, {
+                shouldValidate: false,
+                shouldTouch: false,
+                shouldDirty: false,
+              });
+            }
             continue;
+          } else {
+            delete clearedWhenDepsMissingRef.current[f.name];
           }
 
-          const finalEndpoint = ep;
-          const method = (f.optionsMethod || "GET").toUpperCase();
+          // ---- 1) optionsFetcher (preferred) ----
+          if (typeof f.optionsFetcher === "function") {
+            const fetchKey = [
+              "fetcher",
+              f.name,
+              depsHash,
+              location.pathname,
+            ].join("|");
+            if (lastFetchKeyRef.current[f.name] !== fetchKey) {
+              lastFetchKeyRef.current[f.name] = fetchKey;
+
+              const reqId = (latestReq.current[f.name] ?? 0) + 1;
+              latestReq.current[f.name] = reqId;
+
+              try {
+                const raw = await f.optionsFetcher(deps, location);
+                const arr = normalizeOptionsForField(f, toReactOptions(raw));
+                const isLatest = latestReq.current[f.name] === reqId;
+                if (!cancelled && isLatest && Array.isArray(arr)) {
+                  next[f.name] = arr;
+
+                  // validate current
+                  const allowed = new Set(arr.map((o) => o.value));
+                  if (f.type === "multiselect") {
+                    const curr = coerceArrayForField(f, getValues(f.name));
+                    const keep = curr.filter((v) => allowed.has(v));
+                    if (!arraysEqual(keep, curr)) {
+                      setValue(f.name, keep, {
+                        shouldValidate: false,
+                        shouldTouch: false,
+                        shouldDirty: false,
+                      });
+                    }
+                  } else {
+                    const curr = coerceValueForField(f, getValues(f.name));
+                    if (curr != null && curr !== "" && !allowed.has(curr)) {
+                      setValue(f.name, null, {
+                        shouldValidate: false,
+                        shouldTouch: false,
+                        shouldDirty: false,
+                      });
+                    }
+                  }
+
+                  // NEW: prefill by label if value still empty
+                  tryPrefillByLabel(f, arr);
+                }
+              } catch (err) {
+                console.error(`optionsFetcher failed for "${f.name}"`, err);
+              }
+            }
+            continue; // don’t also hit optionsEndpoint
+          }
+
+          // ---- 2) optionsEndpoint (GET/POST) ----
+          let ep = f.optionsEndpoint;
+          if (typeof ep === "function") ep = ep(deps, location);
+          if (!ep) continue;
+
+          if (!depsReady(f, deps)) continue;
+
+          const defaultMethod = isOptionsRoute(ep) ? "POST" : "GET";
+          const method = (f.optionsMethod || defaultMethod).toUpperCase();
+
           const body =
             typeof f.optionsBody === "function"
-              ? f.optionsBody(depsStable, location)
+              ? f.optionsBody(deps, location)
               : f.optionsBody || {};
 
-          // ParentIds for de-dupe key
-          const parentKey = hasDeps ? f.dependsOn[0] : null;
-          const parentVal = parentKey ? depsStable[parentKey] : null;
-          const parentIds =
-            parentVal == null || parentVal === ""
-              ? []
-              : Array.isArray(parentVal)
-              ? parentVal
-              : [parentVal];
+          const parentIds = (Array.isArray(f.dependsOn) ? f.dependsOn : [])
+            .map((k) => deps[k])
+            .flat()
+            .filter((v) => v != null && v !== "");
 
-          // ─── DE-DUPE: skip issuing the exact same request twice (StrictMode) ───
           const fetchKey = [
+            "endpoint",
             f.name,
             method,
-            String(finalEndpoint),
+            String(ep),
             JSON.stringify(parentIds),
             JSON.stringify(body),
-            location.pathname, // include path so new pages refetch
+            location.pathname,
           ].join("|");
-
-          if (lastFetchKeyRef.current[f.name] === fetchKey) {
-            continue; // Same request was just made—skip this duplicate
-          }
+          if (lastFetchKeyRef.current[f.name] === fetchKey) continue;
           lastFetchKeyRef.current[f.name] = fetchKey;
 
           const reqId = (latestReq.current[f.name] ?? 0) + 1;
@@ -361,7 +556,6 @@ const DynamicForm = forwardRef(
 
           try {
             let resp;
-
             if (isOptionsRoute(ep)) {
               if (method === "GET") {
                 const params = {
@@ -371,37 +565,33 @@ const DynamicForm = forwardRef(
                     : {}),
                   ...body,
                 };
-                resp = await Get(finalEndpoint, params);
+                resp = await Get(ep, params);
               } else {
                 const postBody = {
                   Dropdown: f.name,
                   ...(parentIds.length ? { ParentIds: parentIds } : {}),
                   ...body,
                 };
-                resp = await Post(finalEndpoint, postBody);
+                resp = await Post(ep, postBody);
               }
             } else {
-              // Non-standard endpoints: pass params for GET; body for POST
-              if (method === "GET") resp = await Get(finalEndpoint, body);
-              else resp = await Post(finalEndpoint, body);
+              resp =
+                method === "GET" ? await Get(ep, body) : await Post(ep, body);
             }
 
             const payload = resp?.data ?? resp;
             const raw = extractOptions(payload, f);
-            const arr = toReactOptions(raw);
+            const arr = normalizeOptionsForField(f, toReactOptions(raw));
             const isLatest = latestReq.current[f.name] === reqId;
 
             if (!cancelled && isLatest && Array.isArray(arr)) {
               next[f.name] = arr;
 
-              // After options load, keep current value if valid; otherwise clear silently.
               const allowed = new Set(arr.map((o) => o.value));
               if (f.type === "multiselect") {
-                const curr = Array.isArray(getValues(f.name))
-                  ? getValues(f.name)
-                  : [];
+                const curr = coerceArrayForField(f, getValues(f.name));
                 const keep = curr.filter((v) => allowed.has(v));
-                if (keep.length !== curr.length) {
+                if (!arraysEqual(keep, curr)) {
                   setValue(f.name, keep, {
                     shouldValidate: false,
                     shouldTouch: false,
@@ -409,7 +599,7 @@ const DynamicForm = forwardRef(
                   });
                 }
               } else {
-                const curr = getValues(f.name);
+                const curr = coerceValueForField(f, getValues(f.name));
                 if (curr != null && curr !== "" && !allowed.has(curr)) {
                   setValue(f.name, null, {
                     shouldValidate: false,
@@ -418,12 +608,15 @@ const DynamicForm = forwardRef(
                   });
                 }
               }
+
+              // NEW: prefill by label if value still empty
+              tryPrefillByLabel(f, arr);
             }
           } catch (err) {
             const status = err?.response?.status;
             const bodyDump = err?.response?.data;
             console.error(
-              `Failed loading options for "${f.name}" (${method} ${finalEndpoint})`,
+              `Failed loading options for "${f.name}" (${method} ${ep})`,
               { status, body: bodyDump, err }
             );
           }
@@ -437,8 +630,14 @@ const DynamicForm = forwardRef(
       return () => {
         cancelled = true;
       };
-      // include location.pathname so options refetch when the route changes
-    }, [fields, depsHash, setValue, getValues, location, depsStable]);
+    }, [
+      fields,
+      depsHash,
+      getValues,
+      location.pathname,
+      setValue,
+      initialSelectTextHash, // so prefill reacts if server labels change
+    ]);
 
     const disabled = (disableUntilValid && !isValid) || isSubmitting;
 
@@ -464,11 +663,11 @@ const DynamicForm = forwardRef(
             errors[f.name] && (touchedFields[f.name] || submitCount > 0);
 
           // disable selects until dependencies have values
-          const depsOk = depsReady(f, depsStable);
+          const deps = JSON.parse(depsHash);
+          const depsOk = depsReady(f, deps);
           const isSelectDisabled =
             f.disabled || (isSelectType(f.type) && !depsOk);
 
-          // stable ids for inputs and labels (prevents "Empty string passed to getElementById()")
           const fid = domId("df", f.name);
           const labelId = `${fid}-label`;
 
@@ -491,7 +690,6 @@ const DynamicForm = forwardRef(
               {["text", "password"].includes(f.type) && (
                 <>
                   {f.type === "password" && (
-                    // prevent browser autofill quirks
                     <input
                       type="password"
                       name="fake-pw"
@@ -524,14 +722,17 @@ const DynamicForm = forwardRef(
                 />
               )}
 
-              {/* dropdown (single) */}
+              {/* dropdown */}
               {f.type === "dropdown" && (
                 <Controller
                   name={f.name}
                   control={control}
                   render={({ field }) => {
+                    const coercedValue = coerceValueForField(f, field.value);
                     const selected =
-                      fieldOptions.find((o) => o.value === field.value) || null;
+                      fieldOptions.find((o) => o.value === coercedValue) ||
+                      null;
+
                     return (
                       <Select
                         {...reactSelectProps}
@@ -540,10 +741,14 @@ const DynamicForm = forwardRef(
                         aria-labelledby={labelId}
                         name={f.name}
                         options={fieldOptions}
-                        value={selected} // null when empty, never ""
-                        onChange={(opt) =>
-                          field.onChange(opt ? opt.value : null)
-                        }
+                        value={selected}
+                        onChange={(opt) => {
+                          const v = coerceValueForField(
+                            f,
+                            opt ? opt.value : null
+                          );
+                          if (v !== field.value) field.onChange(v);
+                        }}
                         onBlur={field.onBlur}
                         isClearable
                         isDisabled={isSelectDisabled}
@@ -562,11 +767,11 @@ const DynamicForm = forwardRef(
                   name={f.name}
                   control={control}
                   render={({ field }) => {
-                    const selected = (
-                      Array.isArray(field.value) ? field.value : []
-                    )
+                    const current = coerceArrayForField(f, field.value);
+                    const selected = current
                       .map((v) => fieldOptions.find((o) => o.value === v))
                       .filter(Boolean);
+
                     return (
                       <Select
                         {...reactSelectProps}
@@ -576,9 +781,12 @@ const DynamicForm = forwardRef(
                         name={f.name}
                         options={fieldOptions}
                         value={selected}
-                        onChange={(opts) =>
-                          field.onChange((opts || []).map((o) => o.value))
-                        }
+                        onChange={(opts) => {
+                          const raw = (opts || []).map((o) => o.value);
+                          const coerced = coerceArrayForField(f, raw);
+                          if (!arraysEqual(coerced, current))
+                            field.onChange(coerced);
+                        }}
                         onBlur={field.onBlur}
                         isMulti
                         isClearable

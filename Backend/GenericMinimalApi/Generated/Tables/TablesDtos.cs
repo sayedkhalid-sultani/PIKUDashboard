@@ -5,11 +5,107 @@ using System.Collections.Generic;
 
 namespace YourApp.Contracts;
 
+public record CalendarDto
+{
+    public int Id { get; init; }
+    public DateTime CalendarDate { get; init; }
+    public int Year { get; init; }
+    public int Month { get; init; }
+    public string MonthName { get; init; }
+    public int Quarter { get; init; }
+    public int Day { get; init; }
+    public int Week { get; init; }
+    public bool IsWeekend { get; init; }
+    public string Description { get; init; }
+    public List<SubCriteriaValuesDto> SubCriteriaValueses { get; init; } = new();
+}
+
+public record ChartConfigDto
+{
+    public int Id { get; init; }
+    public int CriteriaId { get; init; }
+    public int UserId { get; init; }
+    public string Name { get; init; }
+    public string ChartType { get; init; }
+    public string ConfigJson { get; init; }
+    public DateTime DateCreated { get; init; }
+    public CriteriaDto? Criteria { get; init; }
+}
+
+public record CriteriaDto
+{
+    public int Id { get; init; }
+    public string Name { get; init; }
+    public string Desc { get; init; }
+    public string ValueDataType { get; init; }
+    public string DataSource { get; init; }
+    public int UnitId { get; init; }
+    public string UniteDescription { get; init; }
+    public int CreateByUserId { get; init; }
+    public DateTime DateCreated { get; init; }
+    public int? ModifiedUserId { get; init; }
+    public DateTime? DateModified { get; init; }
+    public int? DeletedUserId { get; init; }
+    public DateTime? DateDeleted { get; init; }
+    public UniteDto? Unite { get; init; }
+    public List<ChartConfigDto> ChartConfigs { get; init; } = new();
+    public List<CriteriaIndicatorDto> CriteriaIndicators { get; init; } = new();
+}
+
+public record CriteriaIndicatorDto
+{
+    public int Id { get; init; }
+    public int? ParentId { get; init; }
+    public int CriteriaId { get; init; }
+    public string Name { get; init; }
+    public int? OrderIndex { get; init; }
+    public string LocationType { get; init; }
+    public string Description { get; init; }
+    public int CreateByUserId { get; init; }
+    public DateTime DateCreated { get; init; }
+    public int? ModifiedUserId { get; init; }
+    public DateTime? DateModified { get; init; }
+    public int? DeletedUserId { get; init; }
+    public DateTime? DateDeleted { get; init; }
+    public CriteriaDto? Criteria { get; init; }
+    public CriteriaIndicatorDto? CriteriaIndicator { get; init; }
+    public List<CriteriaIndicatorDto> CriteriaIndicators { get; init; } = new();
+    public List<SubCriteriaDto> SubCriterias { get; init; } = new();
+}
+
+public record DataTableDto
+{
+    public int Id { get; init; }
+    public int CriteriaId { get; init; }
+    public int DistrictId { get; init; }
+    public string Value { get; init; }
+    public string SourceNote { get; init; }
+    public int? ConfidenceScore { get; init; }
+    public string CreatedBy { get; init; }
+    public DateTime DateCreated { get; init; }
+    public string ModifiedBy { get; init; }
+    public DateTime? DateModified { get; init; }
+    public DateTime? DateDeleted { get; init; }
+    public DistrictsDto? Districts { get; init; }
+    public IndicatorCriteriasDto? IndicatorCriterias { get; init; }
+}
+
 public record DepartmentsDto
 {
     public int Id { get; init; }
     public string Name { get; init; }
     public int? ParentID { get; init; }
+}
+
+public record DistrictsDto
+{
+    public int Id { get; init; }
+    public int ProvinceId { get; init; }
+    public string Name { get; init; }
+    public decimal? Latitude { get; init; }
+    public decimal? Longitude { get; init; }
+    public ProvincesDto? Provinces { get; init; }
+    public List<DataTableDto> DataTables { get; init; } = new();
 }
 
 public record ErrorLogsDto
@@ -25,25 +121,61 @@ public record ErrorLogsDto
     public string RequestPath { get; init; }
 }
 
+public record IndicatorCriteriasDto
+{
+    public int Id { get; init; }
+    public int? ParentId { get; init; }
+    public int IndicatorId { get; init; }
+    public string Name { get; init; }
+    public int? OrderIndex { get; init; }
+    public string CreatedBy { get; init; }
+    public DateTime DateCreated { get; init; }
+    public string ModifiedBy { get; init; }
+    public DateTime? DateModified { get; init; }
+    public DateTime? DateDeleted { get; init; }
+    public IndicatorCriteriasDto? IndicatorCriterias { get; init; }
+    public IndicatorsDto? Indicators { get; init; }
+    public List<DataTableDto> DataTables { get; init; } = new();
+    public List<IndicatorCriteriasDto> IndicatorCriteriases { get; init; } = new();
+}
+
 public record IndicatorsDto
 {
     public int Id { get; init; }
     public string Name { get; init; }
-    public int DepartmentId { get; init; }
-    public decimal Value { get; init; }
-    public DateTime EffectiveDate { get; init; }
-    public int? CreatedBy { get; init; }
-    public DateTime CreatedAt { get; init; }
+    public string CreatedBy { get; init; }
+    public DateTime DateCreated { get; init; }
+    public string Code { get; init; }
+    public string Description { get; init; }
+    public string ValueDataType { get; init; }
+    public string Unit { get; init; }
+    public string Category { get; init; }
+    public string Datasource { get; init; }
+    public string ModifiedBy { get; init; }
+    public DateTime? Datemodified { get; init; }
+    public DateTime? DateDeleted { get; init; }
+    public string ChartType { get; init; }
+    public List<IndicatorCriteriasDto> IndicatorCriteriases { get; init; } = new();
 }
 
-public record ProductsDto
+public record LocationDto
 {
     public int Id { get; init; }
     public string Name { get; init; }
-    public decimal Price { get; init; }
-    public int DepartmentId { get; init; }
-    public DateTime CreatedAt { get; init; }
-    public DateTime? UpdatedAt { get; init; }
+    public string Type { get; init; }
+    public int? ParentId { get; init; }
+    public LocationDto? Location { get; init; }
+    public List<LocationDto> Locations { get; init; } = new();
+    public List<SubCriteriaValuesDto> SubCriteriaValueses { get; init; } = new();
+}
+
+public record ProvincesDto
+{
+    public int Id { get; init; }
+    public string Name { get; init; }
+    public decimal? Latitude { get; init; }
+    public decimal? Longitude { get; init; }
+    public List<DistrictsDto> Districtses { get; init; } = new();
 }
 
 public record RefreshTokensDto
@@ -59,10 +191,50 @@ public record RefreshTokensDto
     public UsersDto? Users { get; init; }
 }
 
-public record UserDepartmentsDto
+public record SubCriteriaDto
 {
-    public int? UserId { get; init; }
-    public int? DepartmentID { get; init; }
+    public int Id { get; init; }
+    public string Name { get; init; }
+    public string Description { get; init; }
+    public int? ParentId { get; init; }
+    public int CriteriaIndicatorId { get; init; }
+    public int CreateByUserId { get; init; }
+    public DateTime DateCreated { get; init; }
+    public int? ModifiedUserId { get; init; }
+    public DateTime? DateModified { get; init; }
+    public int? DeletedUserId { get; init; }
+    public DateTime? DateDeleted { get; init; }
+    public CriteriaIndicatorDto? CriteriaIndicator { get; init; }
+    public SubCriteriaDto? SubCriteria { get; init; }
+    public List<SubCriteriaDto> SubCriterias { get; init; } = new();
+    public List<SubCriteriaValuesDto> SubCriteriaValueses { get; init; } = new();
+}
+
+public record SubCriteriaValuesDto
+{
+    public int Id { get; init; }
+    public int SubCriteriaId { get; init; }
+    public double Value { get; init; }
+    public DateTime Period { get; init; }
+    public int? CalendarId { get; init; }
+    public int? LocationId { get; init; }
+    public int CreateByUserId { get; init; }
+    public DateTime DateCreated { get; init; }
+    public int? ModifiedUserId { get; init; }
+    public DateTime? DateModified { get; init; }
+    public int? DeletedUserId { get; init; }
+    public DateTime? DateDeleted { get; init; }
+    public CalendarDto? Calendar { get; init; }
+    public LocationDto? Location { get; init; }
+    public SubCriteriaDto? SubCriteria { get; init; }
+}
+
+public record UniteDto
+{
+    public int Id { get; init; }
+    public string Name { get; init; }
+    public string Description { get; init; }
+    public List<CriteriaDto> Criterias { get; init; } = new();
 }
 
 public record UsersDto
@@ -73,11 +245,5 @@ public record UsersDto
     public string Role { get; init; }
     public int? Departments { get; init; }
     public List<RefreshTokensDto> RefreshTokenses { get; init; } = new();
-}
-
-public record UserSubDepartmentsDto
-{
-    public int? UserId { get; init; }
-    public int? SubDepartmentId { get; init; }
 }
 

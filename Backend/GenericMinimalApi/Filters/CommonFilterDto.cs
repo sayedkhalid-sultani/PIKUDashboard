@@ -16,5 +16,7 @@ namespace GenericMinimalApi.Models.Filters
         public List<int>? DepartmentIds { get; set; }
         public List<int>? RoleIds { get; set; }
 
+        public int? CriteriaId { get; set; }
+
     }
 }

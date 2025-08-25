@@ -38,6 +38,12 @@ public record CreateUserParams
     public string OutputMessage { get; init; } // OUTPUT
 }
 
+public record GetCriteriaHierarchyWithChartsParams
+{
+    public int? CriteriaId { get; init; }
+    public int? UserId { get; init; }
+}
+
 public record GetDropDownOptionsParams
 {
     public int? UserId { get; init; }
@@ -101,7 +107,7 @@ public record InsertProductParams
 public record PurgeOldErrorLogsParams
 {
     public DateTime? CutoffUtc { get; init; }
-    public string Message { get; init; } // OUTPUT
+    public string OutputMessage { get; init; } // OUTPUT
 }
 
 public record RevokeAllRefreshTokensForUserParams
