@@ -1,3 +1,7 @@
+-- This trigger automatically recalculates Growth and Total values based on ChartConfigs settings: 
+-- when CalculateGrowthBy is set to 'Legend' it calculates percentage growth across categories, when set to 'Indicator' it calculates within each indicator; similarly, CalculateTotalBy determines whether totals are summed by 'Legend' categories or individual 'Indicator' values,
+-- ensuring dynamic accuracy based on configuration.
+
 IF OBJECT_ID('trg_CalculateGrowthAndTotalMetrics', 'TR') IS NOT NULL
     DROP TRIGGER trg_CalculateGrowthAndTotalMetrics;
 GO
@@ -228,11 +232,9 @@ BEGIN
     END
 END;
 GO
-
-ALTER TABLE [dbo].[DataValues] ENABLE TRIGGER [trg_CalculateGrowthAndTotalMetrics]
-GO
-
-
+-- This trigger automatically recalculates and updates all Growth and Total metric values in the DataValues table
+-- whenever the calculation methodology (CalculateGrowthBy or CalculateTotalBy settings) is modified in the ChartConfigs
+-- table, ensuring that all existing data immediately reflects any changes to the calculation rules without manual intervention.
 
 IF OBJECT_ID('trg_RecalculateMetricsOnConfigChange', 'TR') IS NOT NULL
     DROP TRIGGER trg_RecalculateMetricsOnConfigChange;
