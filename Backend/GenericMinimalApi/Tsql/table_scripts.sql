@@ -59,6 +59,7 @@ IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Locations_ParentId')
 -- Drop tables in correct order
 DROP TABLE IF EXISTS DataValuesAudit;
 DROP TABLE IF EXISTS DataValues;
+DROP TABLE IF EXISTS Sources;
 DROP TABLE IF EXISTS IndicatorChartTypes;
 DROP TABLE IF EXISTS ChartConfigs;
 DROP TABLE IF EXISTS Indicators;
@@ -66,7 +67,6 @@ DROP TABLE IF EXISTS Locations;
 DROP TABLE IF EXISTS Calendars;
 DROP TABLE IF EXISTS Unites;
 
--- Create Tables
 -- Unites
 CREATE TABLE Unites (
     Id INT IDENTITY(1,1) PRIMARY KEY,
@@ -93,11 +93,12 @@ CREATE TABLE Locations (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(100) NOT NULL,
     Type NVARCHAR(50) NULL,
-    ParentId INT NULL
+    ParentId INT NULL,
+    Latitude FLOAT NULL,
+    Longitude FLOAT NULL
 );
 CREATE INDEX IX_Locations_ParentId ON Locations(ParentId);
 
--- Add foreign key constraint for Locations after table creation
 ALTER TABLE Locations 
 ADD CONSTRAINT FK_Locations_ParentId FOREIGN KEY (ParentId) REFERENCES Locations(Id);
 
@@ -120,7 +121,6 @@ CREATE TABLE Indicators (
 CREATE INDEX IX_Indicators_ParentId ON Indicators(ParentId);
 CREATE INDEX IX_Indicators_UniteId ON Indicators(UniteId);
 
--- Add foreign key constraints for Indicators after table creation
 ALTER TABLE Indicators 
 ADD CONSTRAINT FK_Indicators_ParentId FOREIGN KEY (ParentId) REFERENCES Indicators(Id),
     CONSTRAINT FK_Indicators_UniteId FOREIGN KEY (UniteId) REFERENCES Unites(Id),
@@ -152,7 +152,6 @@ CREATE TABLE ChartConfigs (
 );
 CREATE INDEX IX_ChartConfigs_IndicatorId ON ChartConfigs(IndicatorId);
 
--- Add foreign key constraints for ChartConfigs after table creation
 ALTER TABLE ChartConfigs 
 ADD CONSTRAINT FK_ChartConfigs_IndicatorId FOREIGN KEY (IndicatorId) REFERENCES Indicators(Id),
     CONSTRAINT FK_ChartConfigs_DepartmentId FOREIGN KEY (DepartmentId) REFERENCES Departments(Id),
@@ -168,9 +167,20 @@ CREATE TABLE IndicatorChartTypes (
 );
 CREATE INDEX IX_IndicatorChartTypes_IndicatorId ON IndicatorChartTypes(IndicatorId);
 
--- Add foreign key constraint for IndicatorChartTypes after table creation
 ALTER TABLE IndicatorChartTypes 
 ADD CONSTRAINT FK_IndicatorChartTypes_IndicatorId FOREIGN KEY (IndicatorId) REFERENCES Indicators(Id);
+
+-- Sources
+CREATE TABLE Sources (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(255) NOT NULL,
+    Description NVARCHAR(1000) NULL,
+    IndicatorId INT NOT NULL
+);
+CREATE INDEX IX_Sources_IndicatorId ON Sources(IndicatorId);
+
+ALTER TABLE Sources 
+ADD CONSTRAINT FK_Sources_IndicatorId FOREIGN KEY (IndicatorId) REFERENCES Indicators(Id);
 
 -- DataValues
 CREATE TABLE DataValues (
@@ -194,7 +204,6 @@ CREATE INDEX IX_DataValues_LocationId ON DataValues(LocationId);
 CREATE INDEX IX_DataValues_PeriodType ON DataValues(PeriodType);
 CREATE INDEX IX_DataValues_LocationType ON DataValues(LocationType);
 
--- Add foreign key constraints for DataValues after table creation
 ALTER TABLE DataValues 
 ADD CONSTRAINT FK_DataValues_IndicatorId FOREIGN KEY (IndicatorId) REFERENCES Indicators(Id),
     CONSTRAINT FK_DataValues_CalendarId FOREIGN KEY (CalendarId) REFERENCES Calendars(Id),
@@ -213,6 +222,5 @@ CREATE TABLE DataValuesAudit (
 );
 CREATE INDEX IX_DataValuesAudit_DataValueId ON DataValuesAudit(DataValueId);
 
--- Add foreign key constraint for DataValuesAudit after table creation
 ALTER TABLE DataValuesAudit 
 ADD CONSTRAINT FK_DataValuesAudit_DataValueId FOREIGN KEY (DataValueId) REFERENCES DataValues(Id);
