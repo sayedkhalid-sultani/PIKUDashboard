@@ -102,3 +102,4 @@ obj/
 **/Debug/
 **/Release/
 **/debug/
+Backend/GenericMinimalApi/appsettings.json
