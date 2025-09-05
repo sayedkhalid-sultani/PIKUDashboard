@@ -31,7 +31,7 @@ namespace GenericMinimalApi.Workers
             {
                 try
                 {
-                    await PurgeAsync(stoppingToken);
+                    // await PurgeAsync(stoppingToken);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
                 catch (Exception ex)
