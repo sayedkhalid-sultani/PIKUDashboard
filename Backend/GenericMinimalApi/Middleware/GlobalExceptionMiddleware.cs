@@ -27,6 +27,9 @@ namespace GenericMinimalApi.Middleware
             {
                 await errorLogger.LogDbErrorAsync("Global", "UnhandledException", null, ex);
 
+                // Log error to the console
+                Console.Error.WriteLine($"[GlobalExceptionMiddleware] {ex}");
+
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 context.Response.ContentType = "application/json";
                 var response = ApiResponse<object>.FailSingle("An unexpected error occurred.");

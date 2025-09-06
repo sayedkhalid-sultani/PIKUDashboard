@@ -93,6 +93,16 @@ function buildFieldRule(field) {
       }
       return schema;
     }
+    case "checkbox": {
+      let schema = yup
+        .boolean()
+        .transform((val, orig) => {
+          if (typeof orig === "string") return orig === "true";
+          if (typeof orig === "number") return orig === 1;
+          return !!orig;
+        });
+      return addRequired(schema);
+    }
     default:
       return addRequired(yup.string());
   }

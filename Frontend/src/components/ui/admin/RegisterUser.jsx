@@ -34,6 +34,13 @@ const fields = [
     optionsEndpoint: "/api/users/options",
     placeholder: "Choose departments",
   },
+  {
+    name: "isLocked",
+    label: "Is Locked",
+    type: "checkbox",
+    required: false,
+    valueType: "boolean",
+  },
 ];
 
 // Build Yup schema

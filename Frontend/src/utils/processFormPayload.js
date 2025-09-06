@@ -40,15 +40,31 @@ function unwrapOption(x) {
 }
 
 // ---------- form -> API ----------
+// ---------- form -> API ----------
 export function processFormPayload(fields, payload) {
   const out = {};
   for (const f of fields) {
     const { wantNumber, wantArray } = inferIntent(f);
     let v = payload?.[f.name];
 
-    // unwrap react-select shapes
-    if (Array.isArray(v)) v = v.map(unwrapOption);
-    else v = unwrapOption(v);
+    // Handle different field types appropriately
+    switch (f.type) {
+      case "checkbox":
+        // Preserve boolean values for checkboxes
+        out[f.name] = !!v;
+        continue; // Skip further processing
+
+      case "dropdown":
+      case "multiselect":
+        // unwrap react-select shapes for dropdowns
+        if (Array.isArray(v)) v = v.map(unwrapOption);
+        else v = unwrapOption(v);
+        break;
+
+      default:
+        // For text, password, date - keep as is
+        break;
+    }
 
     // allow CSV → array for Ids fields
     if (wantArray && typeof v === "string") {
@@ -63,19 +79,19 @@ export function processFormPayload(fields, payload) {
         v = Array.isArray(v)
           ? v.map(toNum).filter((x) => x !== null)
           : v == null
-          ? []
-          : [toNum(v)];
+            ? []
+            : [toNum(v)];
       } else {
         if (v === "" || v === undefined || v === null) v = null;
         else v = toNum(v);
       }
-    } else {
+    } else if (f.type !== "checkbox") { // Don't convert checkboxes to strings
       if (wantArray) {
         v = Array.isArray(v)
           ? v.map((x) => (x == null ? "" : String(x)))
           : v == null
-          ? []
-          : [String(v)];
+            ? []
+            : [String(v)];
       } else {
         if (v == null) v = "";
         else v = String(v);

@@ -31,11 +31,13 @@ namespace GenericMinimalApi.Extensions
                     dto.Username,
                     PasswordHash = hash,
                     dto.Role,
-                    Departments = dto.Departments
+                    dto.Departments,
+                    dto.IsLocked
+
                 });
 
                 return success
-                    ? Results.Ok(ApiResponse<object>.Ok(new { dto.Username, dto.Role, dto.Departments }, message))
+                    ? Results.Ok(ApiResponse<object>.Ok(new { dto.Username, dto.Role, dto.Departments, dto.IsLocked }, message))
                     : Results.BadRequest(ApiResponse<object>.FailSingle(message));
             })
             .WithValidation<UserRegisterDto>();
@@ -48,6 +50,12 @@ namespace GenericMinimalApi.Extensions
                 {
                     return Results.Json(ApiResponse<object>.FailSingle("Invalid username or password."),
                         statusCode: StatusCodes.Status401Unauthorized);
+                }
+                // Check if user is locked
+                if (user.IsLocked)
+                {
+                    return Results.Json(ApiResponse<object>.FailSingle("User account is locked."),
+                        statusCode: StatusCodes.Status403Forbidden);
                 }
 
                 // normalize roles (single role in model, but allow CSV just in case)
@@ -123,7 +131,7 @@ namespace GenericMinimalApi.Extensions
                         statusCode: StatusCodes.Status401Unauthorized);
 
                 // Load user
-                var user = await dapper.QuerySingleAsync<UserRecord>("GetUserById", new { UserId  = token.UserId });
+                var user = await dapper.QuerySingleAsync<UserRecord>("GetUserById", new { UserId = token.UserId });
                 if (user is null)
                     return Results.Json(ApiResponse<object>.FailSingle("User not found."),
                         statusCode: StatusCodes.Status401Unauthorized);
