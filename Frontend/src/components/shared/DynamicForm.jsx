@@ -149,6 +149,19 @@ const normalizeInitialValues = (fields, values) => {
 
     let v = values[hitKey];
 
+    // --- FIX: handle checkbox values robustly ---
+    if (f.type === "checkbox") {
+      if (typeof v === "string") {
+        out[name] = v === "true";
+      } else if (typeof v === "number") {
+        out[name] = v === 1;
+      } else {
+        out[name] = !!v;
+      }
+      continue;
+    }
+    // --- END FIX ---
+
     const wantNumber =
       (f.valueType || (f.type === "multiselect" ? "number" : "string")) ===
       "number";
@@ -630,16 +643,8 @@ const DynamicForm = forwardRef(
       return () => {
         cancelled = true;
       };
-    }, [
-      fields,
-      depsHash,
-      getValues,
-      location.pathname,
-      setValue,
-      initialSelectTextHash, // so prefill reacts if server labels change
-    ]);
+    }, [fields, depsHash, getValues, location.pathname, setValue, initialSelectTextHash, location]);
 
-    const disabled = (disableUntilValid && !isValid) || isSubmitting;
 
     /* ---------- render ---------- */
     return (
@@ -709,6 +714,24 @@ const DynamicForm = forwardRef(
                     className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition"
                   />
                 </>
+              )}
+
+              {/* checkbox */}
+              {f.type === "checkbox" && (
+                <Controller
+                  name={f.name}
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      id={fid}
+                      type="checkbox"
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      onBlur={field.onBlur}
+                      className="rounded border border-slate-300 w-5 h-5 accent-blue-600"
+                    />
+                  )}
+                />
               )}
 
               {/* date */}
@@ -818,11 +841,10 @@ const DynamicForm = forwardRef(
           <button
             type="submit"
             disabled={(disableUntilValid && !isValid) || isSubmitting}
-            className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-sm transition ${
-              (disableUntilValid && !isValid) || isSubmitting
-                ? "bg-slate-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-sm transition ${(disableUntilValid && !isValid) || isSubmitting
+              ? "bg-slate-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+              }`}
           >
             {submitButtonText}
           </button>

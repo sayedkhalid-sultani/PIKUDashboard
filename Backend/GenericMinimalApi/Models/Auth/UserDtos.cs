@@ -1,7 +1,7 @@
 // Models/Auth/UserDtos.cs
 namespace GenericMinimalApi.Models.Auth
 {
-    public record UserRegisterDto(string Username, string Password, string Role, int Departments);
+    public record UserRegisterDto(string Username, string Password, string Role, int Departments, bool IsLocked);
     public record UserLoginDto(string Username, string Password);
     public record RefreshRequestDto(string RefreshToken);
 
@@ -11,6 +11,7 @@ namespace GenericMinimalApi.Models.Auth
         public int Id { get; set; }
         public string Username { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
+        public bool IsLocked { get; set; }
         public string Role { get; set; } = "Viewer"; // Admin | Manager | Viewer
         public string? Departments { get; set; }     // e.g. "1,2"
     }
@@ -51,11 +52,12 @@ namespace GenericMinimalApi.Models.Auth
         string Username,
         string Password,
         string Role,
-        int Department
+        int Department,
+        bool IsLocked
     );
 
     // UPDATE: same shape (Password could be nullable if you want optional)
-public record UpdateUserDto(string Username, string Password, string Role, int Departments);
+    public record UpdateUserDto(string Username, string Password, string Role, int Departments, bool IsLocked);
 
     // READ: what your GET returns (adjust to your columns)
     public class UserReadDto
@@ -63,8 +65,8 @@ public record UpdateUserDto(string Username, string Password, string Role, int D
         public int Id { get; set; }
         public string Username { get; set; } = "";
         public string Role { get; set; } = "";
-
         public string Departments { get; set; } = "";
+        public bool IsLocked { get; set; }
 
     }
 
@@ -75,6 +77,6 @@ public record UpdateUserDto(string Username, string Password, string Role, int D
     {
         public string? Search { get; set; }
         public IEnumerable<int>? Departments { get; set; }
-        
+
     }
 }

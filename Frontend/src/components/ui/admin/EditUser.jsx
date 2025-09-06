@@ -56,6 +56,13 @@ const baseFields = [
     // options will be injected after we fetch them
     placeholder: "Choose departments",
   },
+  {
+    name: "isLocked",
+    label: "Is Locked",
+    type: "checkbox",
+    required: false,
+    valueType: "boolean",
+  },
 ];
 
 export default function EditUser() {
@@ -98,10 +105,10 @@ export default function EditUser() {
     return baseFields.map((f) =>
       f.name === "Departments"
         ? {
-            ...f,
-            options: deptOptions, // static options -> no optionsFetcher call
-            optionsFetcher: undefined,
-          }
+          ...f,
+          options: deptOptions, // static options -> no optionsFetcher call
+          optionsFetcher: undefined,
+        }
         : f
     );
   }, [deptOptions]);
