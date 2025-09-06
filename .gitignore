@@ -103,3 +103,20 @@ obj/
 **/Release/
 **/debug/
 Backend/GenericMinimalApi/appsettings.json
+# Build outputs anywhere
+[Bb]in/
+[Oo]bj/
+**/[Dd]ebug/
+**/[Rr]elease/
+**/[Pp]ublish/
+
+# IDE folders anywhere
+.vs/
+.vscode/
+.idea/
+
+# Environment-specific appsettings anywhere (keep the base)
+**/appsettings.*.json
+!**/appsettings.json
+!**/appsettings.*.json.example
+
