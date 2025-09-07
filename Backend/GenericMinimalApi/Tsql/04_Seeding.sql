@@ -121,17 +121,17 @@ SELECT @MillionDollarUniteId = Id FROM Unites WHERE Name = N'Million Dollar';
 
 PRINT 'Seeding Locations...';
 -- Locations
-INSERT INTO Locations (Name, Type, ParentId, Latitude, Longitude) VALUES 
-(N'Global', N'Region', NULL, NULL, NULL),
-(N'Asia', N'Continent', 1, NULL, NULL),
-(N'Middle East', N'Region', 2, NULL, NULL),
-(N'Afghanistan', N'Country', 3, 33.9391, 67.7100),
-(N'Pakistan', N'Country', 3, 30.3753, 69.3451),
-(N'Iran', N'Country', 3, 32.4279, 53.6880),
-(N'Kabul', N'Province', 4, 34.5553, 69.2075),
-(N'Herat', N'Province', 4, 34.3482, 62.1997),
-(N'Kandahar', N'Province', 4, 31.6289, 65.7372),
-(N'Balkh', N'Province', 4, 36.7551, 66.8975);
+INSERT INTO Locations (Name, Type, ParentId) VALUES 
+(N'Global', N'Region', NULL),
+(N'Asia', N'Continent', 1),
+(N'Middle East', N'Region', 2),
+(N'Afghanistan', N'Country', 3),
+(N'Pakistan', N'Country', 3),
+(N'Iran', N'Country', 3),
+(N'Kabul', N'Province', 4),
+(N'Herat', N'Province', 4),
+(N'Kandahar', N'Province', 4),
+(N'Balkh', N'Province', 4);
 
 DECLARE @AfghanistanLocId INT;
 SELECT @AfghanistanLocId = Id FROM Locations WHERE Name = N'Afghanistan';
