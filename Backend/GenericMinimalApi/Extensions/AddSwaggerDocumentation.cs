@@ -7,8 +7,19 @@ public static class SwaggerServiceCollectionExtensions
         {
             c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
             {
-                Title = "Generic API",
-                Version = "v1"
+                Title = "PIKUDashboard API",
+                Version = "v1",
+                Description = "Minimal API for PIKUDashboard: authentication, user management, indicators, and more.",
+                Contact = new Microsoft.OpenApi.Models.OpenApiContact
+                {
+                    Name = "PIKUDashboard Team",
+                    Email = "support@pikudashboard.com"
+                },
+                License = new Microsoft.OpenApi.Models.OpenApiLicense
+                {
+                    Name = "MIT License",
+                    Url = new Uri("https://opensource.org/licenses/MIT")
+                }
             });
 
             // ✅ Ensure minimal APIs are not excluded
@@ -53,6 +64,10 @@ public static class SwaggerServiceCollectionExtensions
                     Array.Empty<string>()
                 }
             });
+
+            var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
         });
         return services;
     }

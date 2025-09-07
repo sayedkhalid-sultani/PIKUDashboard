@@ -7,6 +7,11 @@
     <UserSecretsId>48076362-80e9-4d32-a60c-aa367230c81e</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />

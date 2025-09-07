@@ -16,9 +16,9 @@ namespace GenericMinimalApi.Services
                 RequiresAuthorization = true,
                 RequiresTransaction = true,
                 AllowedRoles = new[] { "Admin" },
-                ReadRoles    = new[] { "Admin" },
-                CreateRoles  = new[] { "Admin" },
-                UpdateRoles  = new[] { "Admin" },
+                ReadRoles = new[] { "Admin" },
+                CreateRoles = new[] { "Admin" },
+                UpdateRoles = new[] { "Admin" },
                 // DeleteRoles = new[] { "Admin" },
             })
             .WithGroupName("Users")
@@ -30,8 +30,8 @@ namespace GenericMinimalApi.Services
                 route: "/search",
                 procedure: "GetUsers",
                 ("Items", typeof(UserReadDto))
-                // If your SP returns total count, add:
-                // ,("Total", typeof(int))
+            // If your SP returns total count, add:
+            // ,("Total", typeof(int))
             )
             .WithName("Users_Search")
             .WithTags("Users")

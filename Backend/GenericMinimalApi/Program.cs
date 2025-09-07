@@ -36,7 +36,11 @@ builder.Services.AddSwaggerDocumentation();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-builder.Services.AddFrontendCors();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
 
 var app = builder.Build();
 
@@ -46,15 +50,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Generic API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PIKUDashboard API v1");
         c.DisplayRequestDuration();
         c.DefaultModelsExpandDepth(-1);
         c.EnableTryItOutByDefault();
+        c.DocumentTitle = "PIKUDashboard API Documentation";
     });
 }
 
 // Middleware
-app.UseCors("AllowFrontend");
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseBadHttpRequestMiddleware();
@@ -66,6 +71,6 @@ app.MapIndicators();
 app.MapUserEndpoints();
 
 //Dto Generators
-app.MapDtoGeneratorEndpoint(); 
+app.MapDtoGeneratorEndpoint();
 
 app.Run();

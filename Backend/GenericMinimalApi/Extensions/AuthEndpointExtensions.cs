@@ -38,9 +38,13 @@ namespace GenericMinimalApi.Extensions
                     ? Results.Ok(ApiResponse<object>.Ok(new { dto.Username, dto.Role, dto.Departments }, message))
                     : Results.BadRequest(ApiResponse<object>.FailSingle(message));
             })
+            .WithName("Auth_Register")
+            .WithTags("Authentication", "Register")
+            .WithSummary("Registers a new user.")
+            .WithDescription("Creates a new user account with the specified username, password, role, and departments.")
             .WithValidation<UserRegisterDto>();
 
-            // POST /auth/login  -> returns access & refresh + roles + departments
+            // POST /auth/login
             group.MapPost("/login", async (UserLoginDto dto, IDapperService dapper, IConfiguration cfg) =>
             {
                 var user = await dapper.QuerySingleAsync<UserRecord>("GetUserByUsername", new { dto.Username });
@@ -101,10 +105,14 @@ namespace GenericMinimalApi.Extensions
                     }
                 }, "Login successful."));
             })
+            .WithName("Auth_Login")
+            .WithTags("Authentication", "Login")
+            .WithSummary("Authenticates a user and returns access and refresh tokens.")
+            .WithDescription("Validates user credentials and issues JWT access and refresh tokens. Includes roles and departments in the response.")
             .WithValidation<UserLoginDto>()
             .RequireRateLimiting(RateLimitingExtensions.AuthLoginTight);
 
-            // POST /auth/refresh  -> accepts refreshToken, rotates, returns new pair (same shape + roles/departments)
+            // POST /auth/refresh
             group.MapPost("/refresh", async (RefreshRequestDto dto, IDapperService dapper, IConfiguration cfg) =>
             {
                 var hash = RefreshTokenHelper.Sha256(dto.RefreshToken);
@@ -123,7 +131,7 @@ namespace GenericMinimalApi.Extensions
                         statusCode: StatusCodes.Status401Unauthorized);
 
                 // Load user
-                var user = await dapper.QuerySingleAsync<UserRecord>("GetUserById", new { UserId  = token.UserId });
+                var user = await dapper.QuerySingleAsync<UserRecord>("GetUserById", new { UserId = token.UserId });
                 if (user is null)
                     return Results.Json(ApiResponse<object>.FailSingle("User not found."),
                         statusCode: StatusCodes.Status401Unauthorized);
@@ -184,6 +192,10 @@ namespace GenericMinimalApi.Extensions
                     }
                 }, "Token refreshed."));
             })
+            .WithName("Auth_Refresh")
+            .WithTags("Authentication", "Token")
+            .WithSummary("Refreshes access and refresh tokens.")
+            .WithDescription("Accepts a valid refresh token and returns new access and refresh tokens for the user.")
             .WithValidation<RefreshRequestDto>()
              .RequireRateLimiting(RateLimitingExtensions.AuthRefreshModerate);
 
@@ -205,6 +217,10 @@ namespace GenericMinimalApi.Extensions
                     ? Results.Ok(ApiResponse<object>.Ok(null, "Logged out."))
                     : Results.BadRequest(ApiResponse<object>.FailSingle(msg));
             })
+            .WithName("Auth_Logout")
+            .WithTags("Authentication", "Logout")
+            .WithSummary("Logs out the user.")
+            .WithDescription("Revokes the current refresh token, effectively logging out the user.")
             .WithValidation<RefreshRequestDto>()
             .RequireRateLimiting(RateLimitingExtensions.PublicBucket);
 
@@ -232,6 +248,10 @@ namespace GenericMinimalApi.Extensions
 
                 return Results.Ok(ApiResponse<object>.Ok(null, "Password changed."));
             })
+            .WithName("Auth_ChangePassword")
+            .WithTags("Authentication", "Password")
+            .WithSummary("Changes the password for the authenticated user.")
+            .WithDescription("Allows the authenticated user to change their password.")
             // If you add a validator for UpdatePasswordDto, swap the generic here:
             .WithValidation<ChangePasswordDto>()
             .RequireAuthorization()
