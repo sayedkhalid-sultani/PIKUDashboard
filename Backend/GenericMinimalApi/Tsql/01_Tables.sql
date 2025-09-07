@@ -51,7 +51,11 @@ CREATE TABLE [dbo].[Calendars](
     [Day] [int] NOT NULL,
     [Week] [int] NOT NULL,
     [IsWeekend] [bit] NOT NULL,
-    [Description] [nvarchar](255) NULL
+    [Description] [nvarchar](255) NULL,
+    [MonthShortLabel] [nvarchar](10) NOT NULL DEFAULT(''),      -- new column
+    [QuarterShortLabel] [nvarchar](10) NOT NULL DEFAULT(''),    -- new column
+    [YearQuarterLabel] [nvarchar](20) NOT NULL DEFAULT(''),     -- new column
+    [MonthYearLabel] [nvarchar](20) NOT NULL DEFAULT('')        -- new column
 );
 
 CREATE TABLE [dbo].[Locations](

@@ -1,10 +1,38 @@
-/****** Object:  StoredProcedure [dbo].[CreateRefreshToken]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
+/****** User-Defined Table Types - Create if they don't exist ******/
+
+IF TYPE_ID(N'dbo.IntList') IS NULL
+BEGIN
+    CREATE TYPE [dbo].[IntList] AS TABLE(
+        [Id] [int] NOT NULL
+    )
+    PRINT 'Type dbo.IntList created.'
+END
+ELSE
+BEGIN
+    PRINT 'Type dbo.IntList already exists.'
+END
 GO
-SET QUOTED_IDENTIFIER ON
+
+IF TYPE_ID(N'dbo.IndicatorTableType') IS NULL
+BEGIN
+    CREATE TYPE [dbo].[IndicatorTableType] AS TABLE(
+        [Name] [nvarchar](200) NOT NULL,
+        [DepartmentId] [int] NOT NULL,
+        [Value] [decimal](18, 2) NOT NULL,
+        [EffectiveDate] [date] NOT NULL,
+        [CreatedBy] [int] NULL
+    )
+    PRINT 'Type dbo.IndicatorTableType created.'
+END
+ELSE
+BEGIN
+    PRINT 'Type dbo.IndicatorTableType already exists.'
+END
 GO
--- Create
-CREATE   PROCEDURE [dbo].[CreateRefreshToken]
+
+/****** Stored Procedures - Create or Alter ******/
+
+CREATE OR ALTER PROCEDURE [dbo].[CreateRefreshToken]
     @Id UNIQUEIDENTIFIER,
     @UserId INT,
     @TokenHash NVARCHAR(256),
@@ -25,12 +53,7 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[CreateUser]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   PROCEDURE [dbo].[CreateUser]
+CREATE OR ALTER PROCEDURE [dbo].[CreateUser]
     @Username NVARCHAR(100),
     @PasswordHash NVARCHAR(255),
     @Role NVARCHAR(20),
@@ -53,16 +76,11 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[GetDropDownOptions]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[GetDropDownOptions]
+CREATE OR ALTER PROCEDURE [dbo].[GetDropDownOptions]
 (
   @UserId    INT = NULL,
   @Dropdown  NVARCHAR(100) = NULL,
-  @ParentIds dbo.IntList READONLY        -- ✅ no default
+  @ParentIds dbo.IntList READONLY
 )
 AS
 BEGIN
@@ -92,19 +110,13 @@ BEGIN
 END;
 GO
 
-/****** Object:  StoredProcedure [dbo].[GetProductsAndDepartments]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- NOTE: This procedure references a "Products" table which is not defined in the provided schema.
-CREATE   PROCEDURE [dbo].[GetProductsAndDepartments]
+CREATE OR ALTER PROCEDURE [dbo].[GetProductsAndDepartments]
   @DepartmentId INT = NULL,
-  @UserId INT=Null
+  @UserId INT=NULL
 AS
 BEGIN
   SET NOCOUNT ON;
-
+  -- NOTE: This procedure references a "Products" table which is not defined in the schema.
   -- Result set 1
   SELECT Id, Name, Price, DepartmentId
   FROM Products
@@ -116,13 +128,7 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[GetRefreshTokenByHash]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- Get by hash
-CREATE   PROCEDURE [dbo].[GetRefreshTokenByHash]
+CREATE OR ALTER PROCEDURE [dbo].[GetRefreshTokenByHash]
     @TokenHash NVARCHAR(256)
 AS
 BEGIN
@@ -133,67 +139,45 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[GetUserById]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[GetUserById]
+CREATE OR ALTER PROCEDURE [dbo].[GetUserById]
     @UserId INT
 AS
 BEGIN
     SET NOCOUNT ON;
-
-    SELECT Id, Username,  PasswordHash, Role
+    SELECT Id, Username, PasswordHash, Role
     FROM Users
     WHERE Id = @UserId;
 END;
 GO
 
-/****** Object:  StoredProcedure [dbo].[GetUserByUsername]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[GetUserByUsername]
+CREATE OR ALTER PROCEDURE [dbo].[GetUserByUsername]
     @Username NVARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
-
     SELECT TOP (1)
         u.Id,
         u.Username,
         u.PasswordHash,
-		U.Role AS Role,
-		U.Departments,
+        U.Role AS Role,
+        U.Departments,
         U.IsLocked AS IsLocked
     FROM dbo.Users u
     WHERE u.Username = @Username;
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[GetUsers]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[GetUsers]
+CREATE OR ALTER PROCEDURE [dbo].[GetUsers]
 	@UserId INT=NULL
 AS
 BEGIN
-	SELECT U.id AS Id,U.Username AS Username,U.role AS Role,D.name AS Departments, U.IsLocked as IsLocked FROM dbo.users u INNER JOIN 
-	dbo.Departments d ON u.Departments=d.Id
+	SELECT U.id AS Id, U.Username AS Username, U.role AS Role, D.name AS Departments, U.IsLocked as IsLocked
+    FROM dbo.users u
+    INNER JOIN dbo.Departments d ON u.Departments = d.Id
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[InsertErrorLog]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/* ---------- Insert proc (used by logger) ---------- */
-CREATE   PROCEDURE [dbo].[InsertErrorLog]
+CREATE OR ALTER PROCEDURE [dbo].[InsertErrorLog]
     @Operation     NVARCHAR(50)  = NULL,
     @ProcedureName NVARCHAR(255) = NULL,
     @Parameters    NVARCHAR(MAX) = NULL,
@@ -215,26 +199,26 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[InsertIndicatorsBulk]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   PROCEDURE [dbo].[InsertIndicatorsBulk]
+CREATE OR ALTER PROCEDURE [dbo].[InsertIndicatorsBulk]
     @Items dbo.IndicatorTableType READONLY,
-	  @UserId INT=NULL,
+    @UserId INT = NULL,
     @OutputMessage NVARCHAR(4000) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
-
     BEGIN TRY
-        INSERT INTO dbo.Indicators (Name, DepartmentId, Value, EffectiveDate, CreatedBy)
-        SELECT Name, DepartmentId, Value, EffectiveDate, CreatedBy
+        -- Insert into the correct table (IndicatorValues) instead of Indicators
+        INSERT INTO dbo.[IndicatorValues] (IndicatorId, DepartmentId, Value, EffectiveDate, CreatedBy)
+        SELECT 
+            Name,        -- This should be the IndicatorId (but see note below)
+            DepartmentId, 
+            Value, 
+            EffectiveDate, 
+            CreatedBy
         FROM @Items;
 
         DECLARE @rows INT = @@ROWCOUNT;
-        SET @OutputMessage = CONCAT('Inserted ', @rows, ' indicator(s).');
+        SET @OutputMessage = CONCAT('Inserted ', @rows, ' indicator value record(s).');
     END TRY
     BEGIN CATCH
         SET @OutputMessage = N'Error: ' + ERROR_MESSAGE();
@@ -242,66 +226,16 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[InsertProduct]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- NOTE: This procedure references a "Products" table which is not defined in the provided schema.
-CREATE   PROCEDURE [dbo].[InsertProduct]
-    @Name          NVARCHAR(100),
-    @Price         DECIMAL(18,2),
-    @DepartmentId  INT,
-    @OutputMessage NVARCHAR(4000) OUTPUT
+
+CREATE OR ALTER PROCEDURE [dbo].[PurgeOldErrorLogs]
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    IF @DepartmentId IS NULL
-    BEGIN
-        SET @OutputMessage = N'Error: DepartmentId is required.';
-        RETURN;
-    END
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.Departments WHERE Id = @DepartmentId)
-    BEGIN
-        SET @OutputMessage = N'Error: Department not found.';
-        RETURN;
-    END
-
-    BEGIN TRY
-        INSERT dbo.Products (Name, Price, DepartmentId)
-        VALUES (@Name, @Price, @DepartmentId);
-
-        SET @OutputMessage = N'Product inserted successfully.';
-    END TRY
-    BEGIN CATCH
-        SET @OutputMessage = N'Error: ' + ERROR_MESSAGE();
-    END CATCH
-END
-GO
-
-/****** Object:  StoredProcedure [dbo].[PurgeOldErrorLogs]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[PurgeOldErrorLogs]
-AS
-BEGIN
-  -- Your logic here, e.g.:
   DELETE FROM ErrorLogs
   WHERE Loggedat < DATEADD(DAY, -30, GETDATE());
 END;
 GO
 
-/****** Object:  StoredProcedure [dbo].[RevokeAllRefreshTokensForUser]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- Revoke ALL refresh tokens for a user (optional but recommended)
-CREATE   PROCEDURE [dbo].[RevokeAllRefreshTokensForUser]
+CREATE OR ALTER PROCEDURE [dbo].[RevokeAllRefreshTokensForUser]
     @UserId INT,
     @OutputMessage NVARCHAR(4000) OUTPUT
 AS
@@ -311,7 +245,6 @@ BEGIN
         UPDATE dbo.RefreshTokens
         SET RevokedAt = SYSUTCDATETIME()
         WHERE UserId = @UserId AND RevokedAt IS NULL;
-
         SET @OutputMessage = N'All refresh tokens revoked for user.';
     END TRY
     BEGIN CATCH
@@ -320,13 +253,7 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[RevokeRefreshToken]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- Revoke (optionally link replacement)
-CREATE   PROCEDURE [dbo].[RevokeRefreshToken]
+CREATE OR ALTER PROCEDURE [dbo].[RevokeRefreshToken]
     @Id UNIQUEIDENTIFIER,
     @ReplacedByTokenId UNIQUEIDENTIFIER = NULL,
     @OutputMessage NVARCHAR(4000) OUTPUT
@@ -344,7 +271,6 @@ BEGIN
             SET @OutputMessage = 'Error: refresh token not found.';
             RETURN;
         END
-
         SET @OutputMessage = 'Refresh token revoked.';
     END TRY
     BEGIN CATCH
@@ -353,17 +279,11 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[UpdateUserPassword]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- Update password hash for a user
-CREATE   PROCEDURE [dbo].[UpdateUserPassword]
+CREATE OR ALTER PROCEDURE [dbo].[UpdateUserPassword]
     @Id INT,
     @PasswordHash NVARCHAR(255),
     @OutputMessage NVARCHAR(4000) OUTPUT,
-	@UserId INT=NULL
+    @UserId INT=NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -377,7 +297,6 @@ BEGIN
         UPDATE dbo.Users
         SET PasswordHash = @PasswordHash
         WHERE Id = @Id;
-
         SET @OutputMessage = N'Password changed successfully.';
     END TRY
     BEGIN CATCH
@@ -386,82 +305,67 @@ BEGIN
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[Users_GetById]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROC [dbo].[Users_GetById]
-@Id  INT,
-@UserId INT
+CREATE OR ALTER PROC [dbo].[Users_GetById]
+    @Id  INT,
+    @UserId INT
 AS
 BEGIN
-SELECT u.id,username,role,u.Departments AS Departments, u.IsLocked  FROM dbo.Users u INNER JOIN dbo.Departments d ON U.Departments = d.Id 
-WHERE u.id=@Id
-end 
+    SELECT u.id, username, role, u.Departments AS Departments, u.IsLocked
+    FROM dbo.Users u
+    INNER JOIN dbo.Departments d ON U.Departments = d.Id
+    WHERE u.id = @Id
+END
 GO
 
-/****** Object:  StoredProcedure [dbo].[Users_Insert]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[Users_Insert]
+CREATE OR ALTER PROCEDURE [dbo].[Users_Insert]
     @Username NVARCHAR(50),
     @Password NVARCHAR(100),
     @Role NVARCHAR(50),
     @Department INT,
-    @IsLocked BIT, 
+    @IsLocked BIT,
     @UserId INT = NULL,
     @OutputMessage NVARCHAR(MAX) OUTPUT
 AS
 BEGIN
-    -- Insert user
-    -- Then insert multiple departments
     INSERT INTO users (username, PasswordHash, Role, Departments, IsLocked)
     VALUES (@Username, @Password, @Role, @Department, @IsLocked)
-
     SET @OutputMessage = 'record inserted successfully'
 END
 GO
 
-/****** Object:  StoredProcedure [dbo].[Users_Update]    Script Date: 9/7/2025 9:46:15 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   PROC [dbo].[Users_Update]
-  @Username NVARCHAR(50),
-  @Password NVARCHAR(100)=NULL,
-  @Role NVARCHAR(50),
-  @Departments INT,
-  @IsLocked BIT = 0,                -- new parameter
-  @UserId INT = NULL,
-  @OutputMessage NVARCHAR(MAX) OUTPUT,
-  @Id INT
+CREATE OR ALTER PROC [dbo].[Users_Update]
+    @Username NVARCHAR(50),
+    @Password NVARCHAR(100)=NULL,
+    @Role NVARCHAR(50),
+    @Departments INT,
+    @IsLocked BIT = 0,
+    @UserId INT = NULL,
+    @OutputMessage NVARCHAR(MAX) OUTPUT,
+    @Id INT
 AS
 BEGIN
-  SET NOCOUNT ON;
-  IF @Password IS NULL OR @Password='' 
-  BEGIN 
-    UPDATE dbo.Users
-    SET Username     = @Username,
-        Role         = @Role,
-        Departments  = @Departments,
-        IsLocked     = @IsLocked      -- update lock status
-    WHERE Id = @Id;
-  END
-  ELSE
-  BEGIN
-    UPDATE dbo.Users
-    SET Username     = @Username,
-        PasswordHash = @Password,
-        Role         = @Role,
-        Departments  = @Departments,
-        IsLocked     = @IsLocked      -- update lock status
-    WHERE Id = @Id;
-  END 
-
-  SET @OutputMessage = 'record updated successfully';
+    SET NOCOUNT ON;
+    IF @Password IS NULL OR @Password=''
+    BEGIN
+        UPDATE dbo.Users
+        SET Username     = @Username,
+            Role         = @Role,
+            Departments  = @Departments,
+            IsLocked     = @IsLocked
+        WHERE Id = @Id;
+    END
+    ELSE
+    BEGIN
+        UPDATE dbo.Users
+        SET Username     = @Username,
+            PasswordHash = @Password,
+            Role         = @Role,
+            Departments  = @Departments,
+            IsLocked     = @IsLocked
+        WHERE Id = @Id;
+    END
+    SET @OutputMessage = 'record updated successfully';
 END
 GO
+
+PRINT 'All stored procedures and types have been created or altered successfully.'

@@ -45,7 +45,10 @@ WITH CalendarCTE AS (
     FROM CalendarCTE
     WHERE DATEADD(DAY, 1, CalendarDate) <= @EndDate
 )
-INSERT INTO Calendars (CalendarDate, Year, Month, MonthName, Quarter, Day, Week, IsWeekend, Description)
+INSERT INTO Calendars (
+    CalendarDate, Year, Month, MonthName, Quarter, Day, Week, IsWeekend, Description,
+    MonthShortLabel, QuarterShortLabel, YearQuarterLabel, MonthYearLabel
+)
 SELECT 
     CalendarDate,
     YEAR(CalendarDate) AS Year,
@@ -55,7 +58,11 @@ SELECT
     DAY(CalendarDate) AS Day,
     DATEPART(WEEK, CalendarDate) AS Week,
     CASE WHEN DATEPART(WEEKDAY, CalendarDate) IN (1, 7) THEN 1 ELSE 0 END AS IsWeekend,
-    CONCAT('Q', DATEPART(QUARTER, CalendarDate), ' ', YEAR(CalendarDate)) AS Description
+    CONCAT('Q', DATEPART(QUARTER, CalendarDate), ' ', YEAR(CalendarDate)) AS Description,
+    LEFT(DATENAME(MONTH, CalendarDate), 3) AS MonthShortLabel,
+    CONCAT('Q', DATEPART(QUARTER, CalendarDate)) AS QuarterShortLabel,
+    CONCAT('Q', DATEPART(QUARTER, CalendarDate), '/', YEAR(CalendarDate)) AS YearQuarterLabel,
+    CONCAT(LEFT(DATENAME(MONTH, CalendarDate), 3), '/', YEAR(CalendarDate)) AS MonthYearLabel
 FROM CalendarCTE
 OPTION (MAXRECURSION 0);
 
