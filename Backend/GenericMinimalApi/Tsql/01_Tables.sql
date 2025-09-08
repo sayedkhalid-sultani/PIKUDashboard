@@ -122,8 +122,6 @@ CREATE TABLE [dbo].[ChartConfigs](
     [MaxYAxisValue] [float] NULL,
     [GroupBy] [nvarchar](50) NULL,
     [ChartConfigJson] [nvarchar](max) NULL,
-    [CalculateGrowthBy] [nvarchar](50) NOT NULL DEFAULT ('Legend'),
-    [CalculateTotalBy] [nvarchar](50) NOT NULL DEFAULT ('Legend'),
     [CreatedAt] [datetime] NOT NULL DEFAULT (getdate()),
     [CreatedByUserId] [int] NULL,
     [UpdatedAt] [datetime] NULL,
