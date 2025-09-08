@@ -5,10 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/Shared/Store";
 
 const linkClasses = ({ isActive }) =>
-  `block rounded px-3 py-2 text-sm transition ${
-    isActive
-      ? "bg-blue-50 text-blue-700 font-semibold"
-      : "text-slate-700 hover:bg-slate-100"
+  `block rounded px-3 py-2 text-sm transition ${isActive
+    ? "bg-blue-50 text-blue-700 font-semibold"
+    : "text-slate-700 hover:bg-slate-100"
   }`;
 
 const Sidebar = () => {
@@ -34,12 +33,19 @@ const Sidebar = () => {
 
         {/* Dashboard children */}
         <div className="flex flex-col space-y-1 pl-3 mt-1 border-l border-gray-200">
+          <NavLink to="/dashboard/Map" className={linkClasses}>
+            Map
+          </NavLink>
+          <NavLink to="/dashboard/Mapbox" className={linkClasses}>
+            Mapbox
+          </NavLink>
           <NavLink to="/dashboard/CountryProfile" className={linkClasses}>
             Country Profile
           </NavLink>
           <NavLink to="/dashboard/CountryProfilemui" className={linkClasses}>
             Country Profile mui
           </NavLink>
+
 
           <NavLink to="/dashboard/Analyze" className={linkClasses}>
             Analyze

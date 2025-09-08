@@ -28,6 +28,9 @@ const EditUser = lazy(() => import("../components/ui/admin/EditUser"));
 const ChangePassword = lazy(() => import("../components/ui/ChangePassword"));
 const Login = lazy(() => import("../components/ui/Login"));
 const AdminContent = lazy(() => import("../components/ui/AdminContent"));
+const Map = lazy(() => import("../components/ui/map"));
+const Mapbox = lazy(() => import("../components/ui/Mapbox"));
+
 
 // Simple route-level fallback (keep it light)
 function RouteFallback() {
@@ -39,6 +42,7 @@ export default function AppRouter() {
     <Routes>
       {/* Root: send to dashboard if authed, else login */}
       <Route path="/" element={<HomeRedirect />} />
+
 
       {/* Public-only (login) */}
       <Route
@@ -77,6 +81,22 @@ export default function AppRouter() {
             element={
               <Suspense fallback={<RouteFallback />}>
                 <CountryProfile />
+              </Suspense>
+            }
+          />
+          <Route
+            path="Map"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <Map />
+              </Suspense>
+            }
+          />
+          <Route
+            path="Mapbox"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <Mapbox />
               </Suspense>
             }
           />
