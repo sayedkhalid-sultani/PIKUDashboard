@@ -74,8 +74,8 @@ CREATE TABLE [dbo].[DataValues](
     [LocationId] [int] NULL,
     [PeriodType] [nvarchar](50) NOT NULL,
     [LocationType] [nvarchar](50) NOT NULL,
-    [Growth] [float] NULL,
-    [Total] [float] NULL,
+    [GrowthSinceLastPeriod] [float] NULL,           -- Renamed from Growth
+    [PercentageOfParentTotal] [float] NULL,         -- Renamed from Total
     [DateAdded] [datetime] NOT NULL DEFAULT (getdate()),
     [CreatedByUserId] [int] NULL,
     [UpdatedByUserId] [int] NULL,

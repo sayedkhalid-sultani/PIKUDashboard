@@ -38,7 +38,7 @@ BEGIN
         -- Recalculate both Growth and Total for all DataValues related to these charts
         UPDATE current_dv
         SET 
-            Growth = 
+            GrowthSinceLastPeriod = 
                 CASE 
                     -- Check CalculateGrowthBy setting for the chart
                     WHEN ac.CalculateGrowthBy = 'legend' THEN
@@ -62,7 +62,7 @@ BEGIN
                                 0.0
                         END
                 END,
-            Total = 
+            PercentageOfParentTotal = 
                 CASE 
                     -- Check CalculateTotalBy setting for the chart
                     WHEN ac.CalculateTotalBy = 'legend' THEN
@@ -174,7 +174,7 @@ BEGIN
         -- Recalculate growth and total for all records with affected indicator names
         UPDATE current_dv
         SET 
-            Growth = 
+            GrowthSinceLastPeriod = 
                 CASE 
                     -- Check CalculateGrowthBy setting for the chart
                     WHEN cc.CalculateGrowthBy = 'legend' THEN
@@ -198,7 +198,7 @@ BEGIN
                                 0.0
                         END
                 END,
-            Total = 
+            PercentageOfParentTotal = 
                 CASE 
                     -- Check CalculateTotalBy setting for the chart
                     WHEN cc.CalculateTotalBy = 'legend' THEN
@@ -286,7 +286,7 @@ BEGIN
         -- Recalculate both Growth and Total for affected indicators
         UPDATE current_dv
         SET 
-            Growth = 
+            GrowthSinceLastPeriod = 
                 CASE 
                     -- Check CalculateGrowthBy setting for the chart
                     WHEN cc.CalculateGrowthBy = 'legend' THEN
@@ -310,7 +310,7 @@ BEGIN
                                 0.0
                         END
                 END,
-            Total = 
+            PercentageOfParentTotal = 
                 CASE 
                     -- Check CalculateTotalBy setting for the chart
                     WHEN cc.CalculateTotalBy = 'legend' THEN
