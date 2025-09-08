@@ -51,11 +51,11 @@ CREATE TABLE [dbo].[Calendars](
     [Day] [int] NOT NULL,
     [Week] [int] NOT NULL,
     [IsWeekend] [bit] NOT NULL,
-    [Description] [nvarchar](255) NULL,
-    [MonthShortLabel] [nvarchar](10) NOT NULL DEFAULT(''),      -- new column
-    [QuarterShortLabel] [nvarchar](10) NOT NULL DEFAULT(''),    -- new column
-    [YearQuarterLabel] [nvarchar](20) NOT NULL DEFAULT(''),     -- new column
-    [MonthYearLabel] [nvarchar](20) NOT NULL DEFAULT('')        -- new column
+    [Description] [nvarchar](255) NULL, 
+    [MonthShortLabel] [nvarchar](10) NOT NULL DEFAULT(''),     
+    [QuarterShortLabel] [nvarchar](10) NOT NULL DEFAULT(''),   
+    [YearQuarterLabel] [nvarchar](20) NOT NULL DEFAULT(''),    
+    [MonthYearLabel] [nvarchar](20) NOT NULL DEFAULT('')       
 );
 
 CREATE TABLE [dbo].[Locations](
@@ -72,10 +72,8 @@ CREATE TABLE [dbo].[DataValues](
     [Value] [float] NOT NULL,
     [CalendarId] [int] NULL,
     [LocationId] [int] NULL,
-    [PeriodType] [nvarchar](50) NOT NULL,
-    [LocationType] [nvarchar](50) NOT NULL,
-    [GrowthSinceLastPeriod] [float] NULL,           -- Renamed from Growth
-    [PercentageOfParentTotal] [float] NULL,         -- Renamed from Total
+    [GrowthSinceLastPeriod] [float] NULL,          
+    [PercentageOfParentTotal] [float] NULL,        
     [DateAdded] [datetime] NOT NULL DEFAULT (getdate()),
     [CreatedByUserId] [int] NULL,
     [UpdatedByUserId] [int] NULL,

@@ -234,27 +234,28 @@ SELECT @CovidDebtId = Id FROM Indicators WHERE Name = N'Taking on debt' AND Pare
 PRINT 'Seeding Household Impacts Data for 2022...';
 SELECT TOP 1 @Calendar2022Id = Id FROM Calendars WHERE Year = 2022 AND Month = 12 AND Day = 31;
 
-INSERT INTO DataValues (IndicatorId, Value, CalendarId, LocationId, PeriodType, LocationType, DateAdded, CreatedByUserId)
+-- Removed PeriodType and LocationType columns from DataValues seeding
+INSERT INTO DataValues (IndicatorId, Value, CalendarId, LocationId, DateAdded, CreatedByUserId)
 VALUES 
 -- Economic Event Impacts 2022
-(@EconLossIncomeId, 3.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@EconFoodAccessId, 2.5, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@EconDebtId, 4.1, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@EconLossIncomeId, 3.2, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@EconFoodAccessId, 2.5, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@EconDebtId, 4.1, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
 
 -- Natural Event Impacts 2022
-(@NatLossIncomeId, 2.8, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@NatFoodAccessId, 3.1, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@NatDebtId, 2.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@NatLossIncomeId, 2.8, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@NatFoodAccessId, 3.1, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@NatDebtId, 2.2, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
 
 -- Conflict Event Impacts 2022
-(@ConflictLossIncomeId, 1.9, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@ConflictFoodAccessId, 2.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@ConflictDebtId, 1.5, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@ConflictLossIncomeId, 1.9, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@ConflictFoodAccessId, 2.2, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@ConflictDebtId, 1.5, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
 
 -- COVID-19 Event Impacts 2022
-(@CovidLossIncomeId, 4.8, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@CovidFoodAccessId, 3.9, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
-(@CovidDebtId, 5.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId);
+(@CovidLossIncomeId, 4.8, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@CovidFoodAccessId, 3.9, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId),
+(@CovidDebtId, 5.2, @Calendar2022Id, @AfghanistanLocId, GETDATE(), @AdminUserId);
 
 -- =============================================================================
 -- TRIGGER ACTIVATION: Calculate Growth and Percentage metrics
