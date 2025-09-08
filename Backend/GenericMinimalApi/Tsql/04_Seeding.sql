@@ -33,6 +33,25 @@ DBCC CHECKIDENT ('Unites', RESEED, 0);
 DBCC CHECKIDENT ('Users', RESEED, 0);
 DBCC CHECKIDENT ('Departments', RESEED, 0);
 
+-- =============================================================================
+-- DECLARE ALL VARIABLES AT THE BEGINNING
+-- =============================================================================
+DECLARE @AdminUserId INT;
+DECLARE @OperationsDepartmentId INT;
+DECLARE @AfghanistanLocId INT;
+DECLARE @BillionDollarUniteId INT;
+DECLARE @PercentageUniteId INT;
+DECLARE @CountUniteId INT;
+DECLARE @MillionDollarUniteId INT;
+DECLARE @MillionsUniteId INT;
+DECLARE @HouseholdImpactsId INT;
+DECLARE @EconomicEventId INT, @NaturalEventId INT, @ConflictEventId INT, @CovidEventId INT;
+DECLARE @EconLossIncomeId INT, @EconFoodAccessId INT, @EconDebtId INT;
+DECLARE @NatLossIncomeId INT, @NatFoodAccessId INT, @NatDebtId INT;
+DECLARE @ConflictLossIncomeId INT, @ConflictFoodAccessId INT, @ConflictDebtId INT;
+DECLARE @CovidLossIncomeId INT, @CovidFoodAccessId INT, @CovidDebtId INT;
+DECLARE @Calendar2022Id INT;
+
 PRINT 'Seeding Calendars from 2020 to 2030...';
 -- Seed Calendars table with dates from 2020 to 2030
 DECLARE @StartDate DATE = '2020-01-01';
@@ -93,9 +112,7 @@ INSERT INTO Users (Username, PasswordHash, Role, Departments, IsLocked) VALUES
 (N'viewer1', N'100000.ZcfqzR4G68SLXlDW0aFYaA==.G1S/n252qWn1SoinwuaKrmTnPWY86FBJKTs/IyW6IMo=', N'Viewer', 4, 0),
 (N'viewer2', N'100000.ZcfqzR4G68SLXlDW0aFYaA==.G1S/n252qWn1SoinwuaKrmTnPWY86FBJKTs/IyW6IMo=', N'Viewer', 5, 0);
 
-DECLARE @AdminUserId INT;
-DECLARE @OperationsDepartmentId INT;
-
+-- Set admin user ID
 SELECT @AdminUserId = Id FROM Users WHERE Username = 'admin';
 SELECT @OperationsDepartmentId = Id FROM Departments WHERE Name = 'Operations';
 
@@ -107,17 +124,15 @@ INSERT INTO Unites (Name) VALUES
 (N'Count'),
 (N'Million Dollar'),
 (N'Ratio'),
-(N'Index Points');
+(N'Index Points'),
+(N'Millions');  -- Added for Household Impacts data
 
-DECLARE @BillionDollarUniteId INT;
-DECLARE @PercentageUniteId INT;
-DECLARE @CountUniteId INT;
-DECLARE @MillionDollarUniteId INT;
-
+-- Set unit IDs
 SELECT @BillionDollarUniteId = Id FROM Unites WHERE Name = N'Billion Dollar';
 SELECT @PercentageUniteId = Id FROM Unites WHERE Name = N'Percentage';
 SELECT @CountUniteId = Id FROM Unites WHERE Name = N'Count';
 SELECT @MillionDollarUniteId = Id FROM Unites WHERE Name = N'Million Dollar';
+SELECT @MillionsUniteId = Id FROM Unites WHERE Name = N'Millions';
 
 PRINT 'Seeding Locations...';
 -- Locations
@@ -133,42 +148,12 @@ INSERT INTO Locations (Name, Type, ParentId) VALUES
 (N'Kandahar', N'Province', 4),
 (N'Balkh', N'Province', 4);
 
-DECLARE @AfghanistanLocId INT;
+-- Set Afghanistan location ID
 SELECT @AfghanistanLocId = Id FROM Locations WHERE Name = N'Afghanistan';
 
--- Get Calendar IDs for quarterly data
-DECLARE @Cal2020Q1 INT, @Cal2020Q2 INT, @Cal2020Q3 INT, @Cal2020Q4 INT;
-DECLARE @Cal2021Q1 INT, @Cal2021Q2 INT, @Cal2021Q3 INT, @Cal2021Q4 INT;
-DECLARE @Cal2022Q1 INT, @Cal2022Q2 INT, @Cal2022Q3 INT, @Cal2022Q4 INT;
-DECLARE @Cal2023Q1 INT, @Cal2023Q2 INT, @Cal2023Q3 INT, @Cal2023Q4 INT;
-DECLARE @Cal2024Q1 INT, @Cal2024Q2 INT, @Cal2024Q3 INT, @Cal2024Q4 INT;
-DECLARE @Cal2025Q1 INT, @Cal2025Q2 INT, @Cal2025Q3 INT, @Cal2025Q4 INT;
-
-SELECT @Cal2020Q1 = Id FROM Calendars WHERE Year = 2020 AND Quarter = 1 AND Day = 1 AND Month = 1;
-SELECT @Cal2020Q2 = Id FROM Calendars WHERE Year = 2020 AND Quarter = 2 AND Day = 1 AND Month = 4;
-SELECT @Cal2020Q3 = Id FROM Calendars WHERE Year = 2020 AND Quarter = 3 AND Day = 1 AND Month = 7;
-SELECT @Cal2020Q4 = Id FROM Calendars WHERE Year = 2020 AND Quarter = 4 AND Day = 1 AND Month = 10;
-SELECT @Cal2021Q1 = Id FROM Calendars WHERE Year = 2021 AND Quarter = 1 AND Day = 1 AND Month = 1;
-SELECT @Cal2021Q2 = Id FROM Calendars WHERE Year = 2021 AND Quarter = 2 AND Day = 1 AND Month = 4;
-SELECT @Cal2021Q3 = Id FROM Calendars WHERE Year = 2021 AND Quarter = 3 AND Day = 1 AND Month = 7;
-SELECT @Cal2021Q4 = Id FROM Calendars WHERE Year = 2021 AND Quarter = 4 AND Day = 1 AND Month = 10;
-SELECT @Cal2022Q1 = Id FROM Calendars WHERE Year = 2022 AND Quarter = 1 AND Day = 1 AND Month = 1;
-SELECT @Cal2022Q2 = Id FROM Calendars WHERE Year = 2022 AND Quarter = 2 AND Day = 1 AND Month = 4;
-SELECT @Cal2022Q3 = Id FROM Calendars WHERE Year = 2022 AND Quarter = 3 AND Day = 1 AND Month = 7;
-SELECT @Cal2022Q4 = Id FROM Calendars WHERE Year = 2022 AND Quarter = 4 AND Day = 1 AND Month = 10;
-SELECT @Cal2023Q1 = Id FROM Calendars WHERE Year = 2023 AND Quarter = 1 AND Day = 1 AND Month = 1;
-SELECT @Cal2023Q2 = Id FROM Calendars WHERE Year = 2023 AND Quarter = 2 AND Day = 1 AND Month = 4;
-SELECT @Cal2023Q3 = Id FROM Calendars WHERE Year = 2023 AND Quarter = 3 AND Day = 1 AND Month = 7;
-SELECT @Cal2023Q4 = Id FROM Calendars WHERE Year = 2023 AND Quarter = 4 AND Day = 1 AND Month = 10;
-SELECT @Cal2024Q1 = Id FROM Calendars WHERE Year = 2024 AND Quarter = 1 AND Day = 1 AND Month = 1;
-SELECT @Cal2024Q2 = Id FROM Calendars WHERE Year = 2024 AND Quarter = 2 AND Day = 1 AND Month = 4;
-SELECT @Cal2024Q3 = Id FROM Calendars WHERE Year = 2024 AND Quarter = 3 AND Day = 1 AND Month = 7;
-SELECT @Cal2024Q4 = Id FROM Calendars WHERE Year = 2024 AND Quarter = 4 AND Day = 1 AND Month = 10;
-SELECT @Cal2025Q1 = Id FROM Calendars WHERE Year = 2025 AND Quarter = 1 AND Day = 1 AND Month = 1;
-SELECT @Cal2025Q2 = Id FROM Calendars WHERE Year = 2025 AND Quarter = 2 AND Day = 1 AND Month = 4;
-SELECT @Cal2025Q3 = Id FROM Calendars WHERE Year = 2025 AND Quarter = 3 AND Day = 1 AND Month = 7;
-SELECT @Cal2025Q4 = Id FROM Calendars WHERE Year = 2025 AND Quarter = 4 AND Day = 1 AND Month = 10;
-
+-- =============================================================================
+-- HOUSEHOLD IMPACTS CATEGORY - Event Impact Analysis
+-- =============================================================================
 PRINT 'Creating main dashboard indicators...';
 -- Create main indicators for different business areas
 INSERT INTO Indicators (Name, ParentId, Level, UniteId, OrderIndex, Color, CreatedAt, CreatedByUserId)
@@ -177,11 +162,129 @@ VALUES
 (N'Financial Performance', NULL, 0, @BillionDollarUniteId, 1, N'#4CAF50', GETDATE(), @AdminUserId),
 (N'Operational Metrics', NULL, 0, @CountUniteId, 2, N'#2196F3', GETDATE(), @AdminUserId),
 (N'Market Analysis', NULL, 0, @PercentageUniteId, 3, N'#FF9800', GETDATE(), @AdminUserId),
-(N'Human Resources', NULL, 0, @PercentageUniteId, 4, N'#E91E63', GETDATE(), @AdminUserId);
+(N'Human Resources', NULL, 0, @PercentageUniteId, 4, N'#E91E63', GETDATE(), @AdminUserId),
+(N'Household Impacts', NULL, 0, @MillionsUniteId, 5, N'#9C27B0', GETDATE(), @AdminUserId);
 
--- ... rest of the script continues with the same structure as before for Indicators, ChartConfigs, DataValues, etc.
+-- Get the Household Impacts category ID
+SELECT @HouseholdImpactsId = Id FROM Indicators WHERE Name = N'Household Impacts' AND ParentId IS NULL;
+
+-- =============================================================================
+-- HOUSEHOLD IMPACTS: Level 1 Events (Economic, Natural, Conflict, COVID-19)
+-- =============================================================================
+PRINT 'Seeding Household Impacts Events...';
+INSERT INTO Indicators (Name, ParentId, Level, UniteId, OrderIndex, Color, CreatedAt, CreatedByUserId)
+VALUES 
+(N'Economic', @HouseholdImpactsId, 1, @MillionsUniteId, 1, N'#4CAF50', GETDATE(), @AdminUserId),
+(N'Natural', @HouseholdImpactsId, 1, @MillionsUniteId, 2, N'#2196F3', GETDATE(), @AdminUserId),
+(N'Conflict', @HouseholdImpactsId, 1, @MillionsUniteId, 3, N'#FF9800', GETDATE(), @AdminUserId),
+(N'COVID-19', @HouseholdImpactsId, 1, @MillionsUniteId, 4, N'#E91E63', GETDATE(), @AdminUserId);
+
+-- Get Event IDs
+SELECT @EconomicEventId = Id FROM Indicators WHERE Name = N'Economic' AND ParentId = @HouseholdImpactsId;
+SELECT @NaturalEventId = Id FROM Indicators WHERE Name = N'Natural' AND ParentId = @HouseholdImpactsId;
+SELECT @ConflictEventId = Id FROM Indicators WHERE Name = N'Conflict' AND ParentId = @HouseholdImpactsId;
+SELECT @CovidEventId = Id FROM Indicators WHERE Name = N'COVID-19' AND ParentId = @HouseholdImpactsId;
+
+-- =============================================================================
+-- HOUSEHOLD IMPACTS: Level 2 Impact Types (Loss of income, Limited access to food, Taking on debt)
+-- =============================================================================
+PRINT 'Seeding Household Impacts Types...';
+INSERT INTO Indicators (Name, ParentId, Level, UniteId, OrderIndex, Color, CreatedAt, CreatedByUserId)
+VALUES 
+-- Economic Event Impact Types
+(N'Loss of income', @EconomicEventId, 2, @MillionsUniteId, 1, N'#4CAF50', GETDATE(), @AdminUserId),
+(N'Limited access to food', @EconomicEventId, 2, @MillionsUniteId, 2, N'#8BC34A', GETDATE(), @AdminUserId),
+(N'Taking on debt', @EconomicEventId, 2, @MillionsUniteId, 3, N'#CDDC39', GETDATE(), @AdminUserId),
+
+-- Natural Event Impact Types
+(N'Loss of income', @NaturalEventId, 2, @MillionsUniteId, 1, N'#2196F3', GETDATE(), @AdminUserId),
+(N'Limited access to food', @NaturalEventId, 2, @MillionsUniteId, 2, N'#03A9F4', GETDATE(), @AdminUserId),
+(N'Taking on debt', @NaturalEventId, 2, @MillionsUniteId, 3, N'#00BCD4', GETDATE(), @AdminUserId),
+
+-- Conflict Event Impact Types
+(N'Loss of income', @ConflictEventId, 2, @MillionsUniteId, 1, N'#FF9800', GETDATE(), @AdminUserId),
+(N'Limited access to food', @ConflictEventId, 2, @MillionsUniteId, 2, N'#FFC107', GETDATE(), @AdminUserId),
+(N'Taking on debt', @ConflictEventId, 2, @MillionsUniteId, 3, N'#FFEB3B', GETDATE(), @AdminUserId),
+
+-- COVID-19 Event Impact Types
+(N'Loss of income', @CovidEventId, 2, @MillionsUniteId, 1, N'#E91E63', GETDATE(), @AdminUserId),
+(N'Limited access to food', @CovidEventId, 2, @MillionsUniteId, 2, N'#F44336', GETDATE(), @AdminUserId),
+(N'Taking on debt', @CovidEventId, 2, @MillionsUniteId, 3, N'#FF5722', GETDATE(), @AdminUserId);
+
+-- Get Impact Type IDs
+SELECT @EconLossIncomeId = Id FROM Indicators WHERE Name = N'Loss of income' AND ParentId = @EconomicEventId;
+SELECT @EconFoodAccessId = Id FROM Indicators WHERE Name = N'Limited access to food' AND ParentId = @EconomicEventId;
+SELECT @EconDebtId = Id FROM Indicators WHERE Name = N'Taking on debt' AND ParentId = @EconomicEventId;
+
+SELECT @NatLossIncomeId = Id FROM Indicators WHERE Name = N'Loss of income' AND ParentId = @NaturalEventId;
+SELECT @NatFoodAccessId = Id FROM Indicators WHERE Name = N'Limited access to food' AND ParentId = @NaturalEventId;
+SELECT @NatDebtId = Id FROM Indicators WHERE Name = N'Taking on debt' AND ParentId = @NaturalEventId;
+
+SELECT @ConflictLossIncomeId = Id FROM Indicators WHERE Name = N'Loss of income' AND ParentId = @ConflictEventId;
+SELECT @ConflictFoodAccessId = Id FROM Indicators WHERE Name = N'Limited access to food' AND ParentId = @ConflictEventId;
+SELECT @ConflictDebtId = Id FROM Indicators WHERE Name = N'Taking on debt' AND ParentId = @ConflictEventId;
+
+SELECT @CovidLossIncomeId = Id FROM Indicators WHERE Name = N'Loss of income' AND ParentId = @CovidEventId;
+SELECT @CovidFoodAccessId = Id FROM Indicators WHERE Name = N'Limited access to food' AND ParentId = @CovidEventId;
+SELECT @CovidDebtId = Id FROM Indicators WHERE Name = N'Taking on debt' AND ParentId = @CovidEventId;
+
+-- =============================================================================
+-- HOUSEHOLD IMPACTS: Data Values for 2022 (NOAA Survey Data)
+-- =============================================================================
+PRINT 'Seeding Household Impacts Data for 2022...';
+SELECT TOP 1 @Calendar2022Id = Id FROM Calendars WHERE Year = 2022 AND Month = 12 AND Day = 31;
+
+INSERT INTO DataValues (IndicatorId, Value, CalendarId, LocationId, PeriodType, LocationType, DateAdded, CreatedByUserId)
+VALUES 
+-- Economic Event Impacts 2022
+(@EconLossIncomeId, 3.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@EconFoodAccessId, 2.5, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@EconDebtId, 4.1, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+
+-- Natural Event Impacts 2022
+(@NatLossIncomeId, 2.8, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@NatFoodAccessId, 3.1, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@NatDebtId, 2.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+
+-- Conflict Event Impacts 2022
+(@ConflictLossIncomeId, 1.9, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@ConflictFoodAccessId, 2.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@ConflictDebtId, 1.5, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+
+-- COVID-19 Event Impacts 2022
+(@CovidLossIncomeId, 4.8, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@CovidFoodAccessId, 3.9, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId),
+(@CovidDebtId, 5.2, @Calendar2022Id, @AfghanistanLocId, N'Yearly', N'National', GETDATE(), @AdminUserId);
+
+-- =============================================================================
+-- TRIGGER ACTIVATION: Calculate Growth and Percentage metrics
+-- =============================================================================
+PRINT 'Activating trigger to calculate GrowthSinceLastPeriod and PercentageOfParentTotal...';
+UPDATE DataValues SET Value = Value WHERE CalendarId = @Calendar2022Id;
+
+-- =============================================================================
+-- VERIFICATION: Check Household Impacts data
+-- =============================================================================
+PRINT 'Verifying Household Impacts data...';
+SELECT 
+    grandparent.Name,
+    parent.Name ,
+    i.Name ,
+    dv.Value,
+    dv.GrowthSinceLastPeriod,
+    dv.PercentageOfParentTotal,
+    c.Year
+FROM DataValues dv
+INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+INNER JOIN Indicators parent ON i.ParentId = parent.Id
+INNER JOIN Indicators grandparent ON parent.ParentId = grandparent.Id
+INNER JOIN Calendars c ON dv.CalendarId = c.Id
+ORDER BY parent.OrderIndex, i.OrderIndex;
 
 PRINT 'Data seeding completed successfully!';
+PRINT 'Household Impacts data has been integrated with automatic metric calculations';
+PRINT 'GrowthSinceLastPeriod and PercentageOfParentTotal columns are automatically calculated by trigger';
+PRINT '';
 PRINT 'Calendar data seeded from 2020-01-01 to 2030-12-31';
 PRINT 'Login credentials:';
 PRINT 'All users have password: admin';
