@@ -29,7 +29,6 @@ const ChangePassword = lazy(() => import("../components/ui/ChangePassword"));
 const Login = lazy(() => import("../components/ui/Login"));
 const AdminContent = lazy(() => import("../components/ui/AdminContent"));
 const Map = lazy(() => import("../components/ui/map"));
-const Mapbox = lazy(() => import("../components/ui/Mapbox"));
 
 
 // Simple route-level fallback (keep it light)
@@ -89,14 +88,6 @@ export default function AppRouter() {
             element={
               <Suspense fallback={<RouteFallback />}>
                 <Map />
-              </Suspense>
-            }
-          />
-          <Route
-            path="Mapbox"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <Mapbox />
               </Suspense>
             }
           />
