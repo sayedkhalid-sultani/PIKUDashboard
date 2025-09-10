@@ -124,6 +124,70 @@ const getResponsiveZoom = () => {
     return 7;                                   // Desktop
 };
 
+// --- General ChartCard with Expand ---
+// TODO: Move to separate file if reused
+function ChartCard({ title, subtitle, children, color = "blue" }) {
+    const [expanded, setExpanded] = useState(false);
+
+    return (
+        <>
+            <div className="shadow rounded-lg p-4 relative bg-opacity-0 border border-gray-200">
+                <div className="mb-2 flex items-center justify-between">
+                    <div>
+                        <h3 className={`text-lg font-semibold text-${color}-700`}>{title}</h3>
+                        <p className="text-xs text-gray-500">{subtitle}</p>
+                    </div>
+                    <button
+                        className="ml-2 p-1 rounded hover:bg-gray-100"
+                        title="Expand chart"
+                        onClick={() => setExpanded(true)}
+                    >
+                        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+                            <path d="M4 4l6 6M20 4l-6 6M4 20l6-6M20 20l-6-6" />
+                        </svg>
+                    </button>
+                </div>
+                <div style={{ minHeight: 180 }}>
+                    {children}
+                </div>
+            </div>
+            {expanded && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-opacity-20 backdrop-blur-sm z-[2000]"
+                        onClick={() => setExpanded(false)}
+                    />
+                    <div
+                        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-90 border border-gray-200 shadow-xl rounded-lg p-6 w-full max-w-4xl z-[2001]"
+                        tabIndex={-1}
+                        aria-modal="true"
+                        role="dialog"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                            onClick={() => setExpanded(false)}
+                            title="Close"
+                        >
+                            &times;
+                        </button>
+                        <h3 className={`text-xl font-semibold mb-2 text-${color}-700`}>{title}</h3>
+                        <p className="text-xs text-gray-500 mb-4">{subtitle}</p>
+                        <div className="w-full h-[60vh] flex items-center justify-center">
+                            {children}
+                        </div>
+                        <div className="mt-4 text-xs text-gray-400 text-center">
+                            Press ESC or click outside to close
+                        </div>
+                    </div>
+                </>
+            )}
+        </>
+    );
+}
+
+// --- Use ChartCard for each chart ---
 const Map = () => {
     const [geoData, setGeoData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -332,11 +396,12 @@ const Map = () => {
             </div>
             <div className="w-full md:w-1/3 min-h-[300px] md:h-full overflow-y-auto border-t md:border-t-0 md:border-l border-gray-200 p-4 md:p-6 space-y-6">
                 <h2 className="text-2xl font-bold mb-6 text-blue-700">Charts & Indicators</h2>
-                <div className="shadow rounded-lg p-4">
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-blue-700">Population Density & Indicators</h3>
-                        <p className="text-xs text-gray-500">Top 8 provinces by density, literacy, and employment</p>
-                    </div>
+
+                <ChartCard
+                    title="Population Density & Indicators"
+                    subtitle="Top 8 provinces by density, literacy, and employment"
+                    color="blue"
+                >
                     <ResponsiveContainer width="100%" height={240}>
                         <BarChart
                             data={[
@@ -360,13 +425,14 @@ const Map = () => {
                             <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
                         </BarChart>
                     </ResponsiveContainer>
-                </div>
-                <div className="bg-white shadow rounded-lg p-4">
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-yellow-700">Resource Distribution</h3>
-                        <p className="text-xs text-gray-500">Share of key resources in 2024</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={300}>
+                </ChartCard>
+
+                <ChartCard
+                    title="Resource Distribution"
+                    subtitle="Share of key resources in 2024"
+                    color="yellow"
+                >
+                    <ResponsiveContainer width="100%" height={240}>
                         <PieChart>
                             <Pie
                                 data={[
@@ -383,7 +449,6 @@ const Map = () => {
                                 outerRadius={70}
                                 label
                             >
-                                {/* Different colors for each slice */}
                                 <Cell fill="#3b82f6" />
                                 <Cell fill="#fbbf24" />
                                 <Cell fill="#22c55e" />
@@ -394,14 +459,13 @@ const Map = () => {
                             <Legend />
                         </PieChart>
                     </ResponsiveContainer>
-                </div>
+                </ChartCard>
 
-                {/* Line Chart Card */}
-                <div className="bg-white shadow rounded-lg p-4">
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-green-700">Yearly Growth Trends</h3>
-                        <p className="text-xs text-gray-500">Population & GDP growth (2020-2025)</p>
-                    </div>
+                <ChartCard
+                    title="Yearly Growth Trends"
+                    subtitle="Population & GDP growth (2020-2025)"
+                    color="green"
+                >
                     <ResponsiveContainer width="100%" height={200}>
                         <LineChart
                             data={[
@@ -422,14 +486,13 @@ const Map = () => {
                             <Line type="monotone" dataKey="gdp" stroke="#6366f1" strokeWidth={2} name="GDP Growth" />
                         </LineChart>
                     </ResponsiveContainer>
-                </div>
+                </ChartCard>
 
-                {/* Complex Chart Card: Stacked Bar + Line */}
-                <div className="bg-white shadow rounded-lg p-4">
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-purple-700">Education & Health vs GDP</h3>
-                        <p className="text-xs text-gray-500">Comparing education, health, and GDP by province</p>
-                    </div>
+                <ChartCard
+                    title="Education & Health vs GDP"
+                    subtitle="Comparing education, health, and GDP by province"
+                    color="purple"
+                >
                     <ResponsiveContainer width="100%" height={240}>
                         <ComposedChart
                             data={[
@@ -451,7 +514,7 @@ const Map = () => {
                             <Line yAxisId="right" type="monotone" dataKey="gdp" stroke="#22c55e" strokeWidth={2} name="GDP" />
                         </ComposedChart>
                     </ResponsiveContainer>
-                </div>
+                </ChartCard>
             </div>
         </div>
     );
