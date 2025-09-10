@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MapContainer, GeoJSON, TileLayer, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -117,13 +118,27 @@ const CirclesLayer = ({ circleData, geoData, onCircleClick }) => {
     );
 };
 
+const getResponsiveZoom = () => {
+    if (window.innerWidth < 640) return 5;      // Mobile
+    if (window.innerWidth < 1024) return 6;     // Tablet
+    return 7;                                   // Desktop
+};
+
 const Map = () => {
     const [geoData, setGeoData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedProvince, setSelectedProvince] = useState(null);
     const [circleData, setCircleData] = useState([]);
+    const [mapZoom, setMapZoom] = useState(getResponsiveZoom());
     const mapRef = useRef();
     const modalRef = useRef();
+
+    // Update zoom on resize
+    useEffect(() => {
+        const handleResize = () => setMapZoom(getResponsiveZoom());
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         fetch('/public/afghanistan-provinces.geojson')
@@ -138,7 +153,7 @@ const Map = () => {
 
                     // If no center found, try to calculate centroid from the feature geometry
                     if (!center) {
-                        console.warn(`No center found for province: ${provinceName}`);
+                        // console.warn(`No center found for province: ${provinceName}`);
                         // Calculate centroid as fallback
                         const coords = feature.geometry.type === 'Polygon'
                             ? feature.geometry.coordinates[0]
@@ -248,11 +263,12 @@ const Map = () => {
     }
 
     return (
-        <div className="w-full h-screen relative">
-            <div className="w-full h-full relative">
+        <div className="relative w-full h-full flex flex-col md:flex-row">
+            {/* Map area: responsive width */}
+            <div className="relative w-full md:w-2/3 h-[300px] md:h-full overflow-hidden">
                 <MapContainer
                     center={[33.9391, 67.7100]}
-                    zoom={7}
+                    zoom={mapZoom}
                     className="w-full h-full"
                     whenCreated={mapInstance => { mapRef.current = mapInstance; }}
                 >
@@ -267,8 +283,6 @@ const Map = () => {
                             onEachFeature={onEachProvince}
                         />
                     )}
-
-                    {/* Render circles at predefined province centers */}
                     {geoData && circleData.length > 0 && (
                         <CirclesLayer
                             circleData={circleData}
@@ -277,12 +291,10 @@ const Map = () => {
                         />
                     )}
                 </MapContainer>
-
-                {/* Transparent overlay and modal only on the map container */}
                 {selectedProvince && (
                     <>
                         <div
-                            className="absolute inset-0 bg-opacity-20 backdrop-blur-sm z-[1000]"
+                            className="absolute inset-0  bg-opacity-20 backdrop-blur-sm z-[1000]"
                             onClick={() => setSelectedProvince(null)}
                         />
                         <div
@@ -317,6 +329,129 @@ const Map = () => {
                         </div>
                     </>
                 )}
+            </div>
+            <div className="w-full md:w-1/3 min-h-[300px] md:h-full overflow-y-auto border-t md:border-t-0 md:border-l border-gray-200 p-4 md:p-6 space-y-6">
+                <h2 className="text-2xl font-bold mb-6 text-blue-700">Charts & Indicators</h2>
+                <div className="shadow rounded-lg p-4">
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-blue-700">Population Density & Indicators</h3>
+                        <p className="text-xs text-gray-500">Top 8 provinces by density, literacy, and employment</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={240}>
+                        <BarChart
+                            data={[
+                                { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
+                                { province: 'Herat', density: 800, literacy: 78, employment: 65 },
+                                { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
+                                { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
+                                { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
+                                { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
+                                { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
+                                { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                            ]}
+                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                        >
+                            <XAxis dataKey="province" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="density" fill="#2563eb" name="Density" />
+                            <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
+                            <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="bg-white shadow rounded-lg p-4">
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-yellow-700">Resource Distribution</h3>
+                        <p className="text-xs text-gray-500">Share of key resources in 2024</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={[
+                                    { name: 'Water', value: 400 },
+                                    { name: 'Electricity', value: 300 },
+                                    { name: 'Internet', value: 250 },
+                                    { name: 'Healthcare', value: 200 },
+                                    { name: 'Education', value: 180 }
+                                ]}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={70}
+                                label
+                            >
+                                {/* Different colors for each slice */}
+                                <Cell fill="#3b82f6" />
+                                <Cell fill="#fbbf24" />
+                                <Cell fill="#22c55e" />
+                                <Cell fill="#a21caf" />
+                                <Cell fill="#ef4444" />
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* Line Chart Card */}
+                <div className="bg-white shadow rounded-lg p-4">
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-green-700">Yearly Growth Trends</h3>
+                        <p className="text-xs text-gray-500">Population & GDP growth (2020-2025)</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={200}>
+                        <LineChart
+                            data={[
+                                { year: 2020, population: 2.1, gdp: 1.2 },
+                                { year: 2021, population: 2.5, gdp: 1.4 },
+                                { year: 2022, population: 3.0, gdp: 1.7 },
+                                { year: 2023, population: 2.7, gdp: 1.9 },
+                                { year: 2024, population: 3.2, gdp: 2.2 },
+                                { year: 2025, population: 3.5, gdp: 2.5 }
+                            ]}
+                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                        >
+                            <XAxis dataKey="year" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="population" stroke="#22c55e" strokeWidth={2} name="Population Growth" />
+                            <Line type="monotone" dataKey="gdp" stroke="#6366f1" strokeWidth={2} name="GDP Growth" />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* Complex Chart Card: Stacked Bar + Line */}
+                <div className="bg-white shadow rounded-lg p-4">
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-purple-700">Education & Health vs GDP</h3>
+                        <p className="text-xs text-gray-500">Comparing education, health, and GDP by province</p>
+                    </div>
+                    <ResponsiveContainer width="100%" height={240}>
+                        <ComposedChart
+                            data={[
+                                { province: 'Kabul', education: 80, health: 70, gdp: 2.1 },
+                                { province: 'Herat', education: 65, health: 60, gdp: 1.8 },
+                                { province: 'Balkh', education: 60, health: 55, gdp: 1.2 },
+                                { province: 'Kandahar', education: 55, health: 50, gdp: 1.0 },
+                                { province: 'Nangarhar', education: 50, health: 45, gdp: 0.9 }
+                            ]}
+                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                        >
+                            <XAxis dataKey="province" />
+                            <YAxis yAxisId="left" label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }} />
+                            <YAxis yAxisId="right" orientation="right" label={{ value: 'GDP (Billion $)', angle: 90, position: 'insideRight' }} />
+                            <Tooltip />
+                            <Legend />
+                            <Bar yAxisId="left" dataKey="education" fill="#6366f1" name="Education" />
+                            <Bar yAxisId="left" dataKey="health" fill="#f59e42" name="Health" />
+                            <Line yAxisId="right" type="monotone" dataKey="gdp" stroke="#22c55e" strokeWidth={2} name="GDP" />
+                        </ComposedChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
         </div>
     );
