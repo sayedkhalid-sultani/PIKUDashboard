@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiMaximize, FiMinimize } from 'react-icons/fi';
+import { useReactToPrint } from 'react-to-print';
 
 function ShowInFullScreen({
     children,
@@ -11,7 +12,7 @@ function ShowInFullScreen({
     const [open, setOpen] = useState(false);
     const [animating, setAnimating] = useState(false);
     const [showOpenAnim, setShowOpenAnim] = useState(false);
-    const modalRef = useRef();
+    const contentRef = useRef(null);
 
     // Handle escape key to close modal
     useEffect(() => {
@@ -47,6 +48,12 @@ function ShowInFullScreen({
         }
     }, [animating, open]);
 
+    // Print handler using react-to-print (new API)
+    const handlePrint = useReactToPrint({
+        contentRef,
+        documentTitle: 'Dashboard Chart',
+    });
+
     return (
         <div className={`relative ${containerClassName}`}>
             {/* Preview section */}
@@ -77,7 +84,7 @@ function ShowInFullScreen({
                         onClick={e => e.stopPropagation() && setOpen(false)}
                     >
                         <div
-                            ref={modalRef}
+                            // <-- Attach ref here!
                             className={`relative bg-white bg-opacity-90 border border-gray-200 shadow-xl rounded-lg ${modalClassName} transition-all duration-300 ${showOpenAnim ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
                         >
                             <button
@@ -89,7 +96,17 @@ function ShowInFullScreen({
                             >
                                 <FiMinimize size={20} />
                             </button>
-                            <div className={contentClassName}>
+                            <button
+                                className="absolute top-2 right-14 p-1 rounded bg-white bg-opacity-70 hover:bg-opacity-100 transition-all shadow-md flex items-center justify-center"
+                                onClick={handlePrint}
+                                title="Print"
+                                aria-label="Print modal content"
+                                style={{ zIndex: 100000 }}
+                                disabled={!open}
+                            >
+                                🖨️
+                            </button>
+                            <div className={contentClassName} ref={contentRef} >
                                 {children}
                             </div>
                             <div className="mt-4 text-xs text-gray-400 text-center">
