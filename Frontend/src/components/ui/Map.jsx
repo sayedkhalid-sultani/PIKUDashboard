@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
 import ShowInFullScreen from '../shared/ShowInFullScreen';
+import html2canvas from 'html2canvas';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -325,6 +326,18 @@ const Map = () => {
         layer.bindTooltip(feature.properties.NAME_1, { direction: 'center' });
     };
 
+    const downloadChartImage = async (chartId) => {
+        const chartEl = document.getElementById(chartId);
+        if (chartEl) {
+            const canvas = await html2canvas(chartEl, { useCORS: true });
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = 'chart.png';
+            link.click();
+        }
+    };
+
     if (loading) {
         return <div className="flex items-center justify-center h-screen text-gray-600">Loading map data...</div>;
     }
@@ -407,32 +420,51 @@ const Map = () => {
                 <h2 className="text-2xl font-bold mb-6 text-blue-700">Charts & Indicators</h2>
 
 
+                {/* Bar Chart */}
                 <ShowInFullScreen>
-                    <ResponsiveContainer width="100%" height={240}>
-                        <BarChart
-                            data={[
-                                { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
-                                { province: 'Herat', density: 800, literacy: 78, employment: 65 },
-                                { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
-                                { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
-                                { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
-                                { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
-                                { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
-                                { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
-                            ]}
-                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-blue-700">Population Density by Province</h3>
+                        <p className="text-xs text-gray-500">Shows population density, literacy, and employment rates for major provinces.</p>
+                        <button
+                            className="mb-2 px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
+                            onClick={() => downloadChartImage('bar-chart')}
                         >
-                            <XAxis dataKey="province" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="density" fill="#2563eb" name="Density" />
-                            <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
-                            <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                            Download as Image
+                        </button>
+                    </div>
+                    <div id="bar-chart">
+                        <ResponsiveContainer width="100%" height={240}>
+                            <BarChart
+                                data={[
+                                    { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
+                                    { province: 'Herat', density: 800, literacy: 78, employment: 65 },
+                                    { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
+                                    { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
+                                    { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
+                                    { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
+                                    { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
+                                    { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                                ]}
+                                margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                            >
+                                <XAxis dataKey="province" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Bar dataKey="density" fill="#2563eb" name="Density" />
+                                <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
+                                <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </ShowInFullScreen>
+
+                {/* Pie Chart */}
                 <ShowInFullScreen>
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-blue-700">Access to Basic Services</h3>
+                        <p className="text-xs text-gray-500">Pie chart of access to water, electricity, internet, healthcare, and education.</p>
+                    </div>
                     <ResponsiveContainer width="100%" height={240}>
                         <PieChart>
                             <Pie
@@ -462,7 +494,12 @@ const Map = () => {
                     </ResponsiveContainer>
                 </ShowInFullScreen>
 
+                {/* Line Chart */}
                 <ShowInFullScreen>
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-blue-700">Population & GDP Growth</h3>
+                        <p className="text-xs text-gray-500">Line chart showing population and GDP growth over years.</p>
+                    </div>
                     <ResponsiveContainer width="100%" height={200}>
                         <LineChart
                             data={[
@@ -485,7 +522,12 @@ const Map = () => {
                     </ResponsiveContainer>
                 </ShowInFullScreen>
 
+                {/* Composed Chart */}
                 <ShowInFullScreen modalClassName='w-7xl py-20'>
+                    <div className="mb-2">
+                        <h3 className="text-lg font-semibold text-blue-700">Education, Health & GDP by Province</h3>
+                        <p className="text-xs text-gray-500">Composed chart showing education, health scores, and GDP for selected provinces.</p>
+                    </div>
                     <ResponsiveContainer width="100%" height={240}>
                         <ComposedChart
                             data={[
