@@ -72,17 +72,12 @@ CREATE TABLE [dbo].[DataValues](
     [Value] [float] NOT NULL,
     [CalendarId] [int] NULL,
     [LocationId] [int] NULL,
-    [GrowthSinceLastPeriod] [float] NULL,          
-    [PercentageOfParentTotal] [float] NULL,        
-    [DateAdded] [datetime] NOT NULL DEFAULT (getdate()),
-    [CreatedByUserId] [int] NULL,
-    [UpdatedByUserId] [int] NULL,
-    [UpdatedAt] [datetime] NULL,
+    [GrowthSinceLastPeriod] [float] NULL,       
+    [GrowthSinceLastYearPeriod] [float] NULL,   
+    [PercentageOfParentTotal] [float] NULL,      
     CONSTRAINT [FK_DataValues_IndicatorId] FOREIGN KEY([IndicatorId]) REFERENCES [dbo].[Indicators] ([Id]),
     CONSTRAINT [FK_DataValues_CalendarId] FOREIGN KEY([CalendarId]) REFERENCES [dbo].[Calendars] ([Id]),
-    CONSTRAINT [FK_DataValues_LocationId] FOREIGN KEY([LocationId]) REFERENCES [dbo].[Locations] ([Id]),
-    CONSTRAINT [FK_DataValues_CreatedByUserId] FOREIGN KEY([CreatedByUserId]) REFERENCES [dbo].[Users] ([Id]),
-    CONSTRAINT [FK_DataValues_UpdatedByUserId] FOREIGN KEY([UpdatedByUserId]) REFERENCES [dbo].[Users] ([Id])
+    CONSTRAINT [FK_DataValues_LocationId] FOREIGN KEY([LocationId]) REFERENCES [dbo].[Locations] ([Id])
 );
 
 CREATE TABLE [dbo].[DataValuesAudit](
@@ -121,7 +116,6 @@ CREATE TABLE [dbo].[ChartConfigs](
     [MaxXAxisValue] [float] NULL,
     [MaxYAxisValue] [float] NULL,
     [GroupBy] [nvarchar](50) NULL,
-    [ChartConfigJson] [nvarchar](max) NULL,
     [CreatedAt] [datetime] NOT NULL DEFAULT (getdate()),
     [CreatedByUserId] [int] NULL,
     [UpdatedAt] [datetime] NULL,
