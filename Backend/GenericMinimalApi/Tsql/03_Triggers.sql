@@ -1,5 +1,3 @@
--- functions section
-
 -- logic to find previous value based on OrderIndex and hierarchy for calculating GrowthSinceLastPeriod
 -- If current indicator's OrderIndex = 1:
 --    Step 1: Check parent's OrderIndex
@@ -76,11 +74,14 @@ BEGIN
 END
 GO
 
+-- If current indicator is at any level in hierarchy:
+--     Step 1: Find current indicator's top-level parent (root of hierarchy)
+--     Step 2: Within that same hierarchy group, search for indicator with same name
+--     Step 3: Look for value from previous calendar year (Year - 1)
+--     Step 4: Prefer exact month match, then closest month match
+--     Step 5: Return the found value as previous year value
 
-
-
-
-CREATE OR ALTER   FUNCTION [dbo].[fn_FindLastYearValue](
+CREATE OR ALTER FUNCTION [dbo].[fn_FindLastYearValue](
     @CurrentIndicatorId INT,
     @CalendarId INT
 )
@@ -91,65 +92,45 @@ BEGIN
     DECLARE @CurrentIndicatorName NVARCHAR(255);
     DECLARE @CurrentYear INT;
     DECLARE @CurrentMonth INT;
-    DECLARE @CurrentDay INT;
     DECLARE @TopLevelId INT;
-    DECLARE @LocationId INT;
     
-    -- Get current indicator details
-    SELECT @CurrentIndicatorName = i.Name, 
-           @CurrentYear = c.Year,
-           @CurrentMonth = c.Month,
-           @CurrentDay = c.Day,
-           @TopLevelId = dbo.fn_GetTopLevelParent(i.Id),
-           @LocationId = dv.LocationId
+    -- Get current indicator details including hierarchy info
+    SELECT 
+        @CurrentIndicatorName = i.Name, 
+        @CurrentYear = c.Year,
+        @CurrentMonth = c.Month,
+        @TopLevelId = dbo.fn_GetTopLevelParent(i.Id)
     FROM Indicators i
     INNER JOIN DataValues dv ON i.Id = dv.IndicatorId
     INNER JOIN Calendars c ON dv.CalendarId = c.Id
     WHERE i.Id = @CurrentIndicatorId AND dv.CalendarId = @CalendarId;
     
-    -- Try to find exact match (same hierarchy, same indicator name, same month/day, previous year)
-    SELECT @LastYearValue = dv.Value
+    -- Find value from previous year within SAME HIERARCHY
+    SELECT TOP 1 @LastYearValue = dv.Value
     FROM DataValues dv
     INNER JOIN Indicators i ON dv.IndicatorId = i.Id
     INNER JOIN Calendars c ON dv.CalendarId = c.Id
     WHERE i.Name = @CurrentIndicatorName
-      AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId  -- Same hierarchy
-      AND c.Year = @CurrentYear - 1
-      AND c.Month = @CurrentMonth
-      AND c.Day = @CurrentDay
-      AND dv.LocationId = @LocationId;
-    
-    -- If exact date not found, try same month only (ignore day)
-    IF @LastYearValue IS NULL
-    BEGIN
-        SELECT @LastYearValue = dv.Value
-        FROM DataValues dv
-        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-        INNER JOIN Calendars c ON dv.CalendarId = c.Id
-        WHERE i.Name = @CurrentIndicatorName
-          AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId  -- Same hierarchy
-          AND c.Year = @CurrentYear - 1
-          AND c.Month = @CurrentMonth
-          AND dv.LocationId = @LocationId;
-    END
-    
-    -- If still not found, try same year only (any month/day in previous year)
-    IF @LastYearValue IS NULL
-    BEGIN
-        SELECT @LastYearValue = dv.Value
-        FROM DataValues dv
-        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-        INNER JOIN Calendars c ON dv.CalendarId = c.Id
-        WHERE i.Name = @CurrentIndicatorName
-          AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId  -- Same hierarchy
-          AND c.Year = @CurrentYear - 1
-          AND dv.LocationId = @LocationId;
-    END
+      AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId  -- Same hierarchy only
+      AND c.Year = @CurrentYear - 1                     -- Previous year
+    ORDER BY 
+        CASE WHEN c.Month = @CurrentMonth THEN 0 ELSE 1 END, -- Prefer same month
+        ABS(c.Month - @CurrentMonth);                        -- Then closest month
     
     RETURN @LastYearValue;
 END
 GO
 
+
+-- Function to find the root/top-level parent of any indicator in the hierarchy:
+--     Step 1: Start with the current indicator ID
+--     Step 2: Move up the parent chain recursively
+--     Step 3: For each level:
+--         - Get the parent ID of the current indicator
+--         - If parent exists, set it as the new current level and continue
+--         - If no parent exists (NULL), stop the loop
+--     Step 4: Return the highest level parent found (root of the hierarchy)
+--     Step 5: If indicator has no parents, return the original indicator ID
 
 CREATE OR ALTER   FUNCTION [dbo].[fn_GetTopLevelParent] (@IndicatorId INT)
 RETURNS INT
