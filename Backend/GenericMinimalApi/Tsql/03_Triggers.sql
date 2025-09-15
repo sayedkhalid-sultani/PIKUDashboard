@@ -1,91 +1,16 @@
--- Pure OrderIndex Logic Only: Works for 4 levels deep hierarchy
-CREATE OR ALTER TRIGGER [dbo].[trg_CalculateHierarchicalGrowth]
-ON [dbo].[DataValues]
-AFTER INSERT, UPDATE, DELETE
-AS
-BEGIN
-    SET NOCOUNT ON;
+-- functions section
 
-    IF EXISTS (SELECT 1 FROM inserted)
-    BEGIN
-        UPDATE current_dv
-        SET 
-            GrowthSinceLastPeriod = 
-                CASE 
-                    WHEN previous_value.PreviousValue IS NOT NULL AND previous_value.PreviousValue <> 0 THEN
-                        ROUND(((current_dv.Value - previous_value.PreviousValue) / previous_value.PreviousValue) * 100, 2)
-                    WHEN previous_value.PreviousValue = 0 AND current_dv.Value <> 0 THEN
-                        100.0
-                    ELSE
-                        0.0
-                END
-            
-        FROM DataValues current_dv
-        INNER JOIN inserted i ON current_dv.Id = i.Id
-        INNER JOIN Indicators current_i ON current_dv.IndicatorId = current_i.Id
-        
-        -- Get parent information
-        LEFT JOIN Indicators current_parent ON current_i.ParentId = current_parent.Id
-        LEFT JOIN Indicators current_grandparent ON current_parent.ParentId = current_grandparent.Id
-        LEFT JOIN Indicators current_ggparent ON current_grandparent.ParentId = current_ggparent.Id
-        
-        OUTER APPLY (
-            -- Find previous value using only OrderIndex logic
-            SELECT TOP 1 prev_dv.Value as PreviousValue
-            FROM DataValues prev_dv
-            INNER JOIN Indicators prev_i ON prev_dv.IndicatorId = prev_i.Id
-            
-            -- Case 1: Same parent, OrderIndex - 1
-            WHERE (
-                (prev_i.ParentId = current_i.ParentId AND prev_i.OrderIndex = current_i.OrderIndex - 1)
-                OR
-                -- Case 2: OrderIndex = 1, find parent's previous sibling's last child
-                (current_i.OrderIndex = 1 AND current_parent.OrderIndex > 1 
-                 AND prev_i.ParentId IN (
-                     SELECT Id FROM Indicators 
-                     WHERE ParentId = current_parent.ParentId 
-                     AND OrderIndex = current_parent.OrderIndex - 1
-                 )
-                 AND prev_i.OrderIndex = (SELECT MAX(OrderIndex) FROM Indicators WHERE ParentId = prev_i.ParentId))
-                OR
-                -- Case 3: OrderIndex = 1 and parent OrderIndex = 1, find grandparent's previous sibling's last child
-                (current_i.OrderIndex = 1 AND current_parent.OrderIndex = 1 AND current_grandparent.OrderIndex > 1
-                 AND prev_i.ParentId IN (
-                     SELECT Id FROM Indicators 
-                     WHERE ParentId = current_grandparent.ParentId 
-                     AND OrderIndex = current_grandparent.OrderIndex - 1
-                 )
-                 AND prev_i.OrderIndex = (SELECT MAX(OrderIndex) FROM Indicators WHERE ParentId = prev_i.ParentId))
-                OR
-                -- Case 4: OrderIndex = 1, parent OrderIndex = 1, grandparent OrderIndex = 1, find ggparent's previous sibling's last child
-                (current_i.OrderIndex = 1 AND current_parent.OrderIndex = 1 AND current_grandparent.OrderIndex = 1 AND current_ggparent.OrderIndex > 1
-                 AND prev_i.ParentId IN (
-                     SELECT Id FROM Indicators 
-                     WHERE ParentId = current_ggparent.ParentId 
-                     AND OrderIndex = current_ggparent.OrderIndex - 1
-                 )
-                 AND prev_i.OrderIndex = (SELECT MAX(OrderIndex) FROM Indicators WHERE ParentId = prev_i.ParentId))
-            )
-            AND prev_dv.CalendarId = current_dv.CalendarId
-            AND prev_dv.LocationId = current_dv.LocationId
-            
-            ORDER BY 
-                -- Priority: same parent > parent level > grandparent level > ggparent level
-                CASE 
-                    WHEN prev_i.ParentId = current_i.ParentId THEN 1
-                    WHEN prev_i.ParentId IN (SELECT Id FROM Indicators WHERE ParentId = current_parent.ParentId) THEN 2
-                    WHEN prev_i.ParentId IN (SELECT Id FROM Indicators WHERE ParentId = current_grandparent.ParentId) THEN 3
-                    ELSE 4
-                END
-        ) previous_value;
-    END
-END;
-GO
-
-
-
--- Fun approach dynamically calculate OrderIndex based on recursive CTE
-CREATE OR ALTER FUNCTION dbo.fn_FindPreviousValue(@CurrentIndicatorId INT)
+-- logic to find previous value based on OrderIndex and hierarchy for calculating GrowthSinceLastPeriod
+-- If current indicator's OrderIndex = 1:
+--    Step 1: Check parent's OrderIndex
+--    Step 2: If parent's OrderIndex > 1:
+--         - Find parent's previous sibling (OrderIndex - 1)
+--         - In that previous sibling, find child with highest OrderIndex
+--         - Use that value as previous value
+--    Step 3: If parent's OrderIndex = 1:
+--         - Go to grandparent level
+--         - Repeat Step 2 logic recursively
+CREATE OR ALTER   FUNCTION [dbo].[fn_FindPreviousValue](@CurrentIndicatorId INT)
 RETURNS FLOAT
 AS
 BEGIN
@@ -151,7 +76,112 @@ BEGIN
 END
 GO
 
--- Simplified trigger using the function
+
+
+
+
+CREATE OR ALTER   FUNCTION [dbo].[fn_FindLastYearValue](
+    @CurrentIndicatorId INT,
+    @CalendarId INT
+)
+RETURNS FLOAT
+AS
+BEGIN
+    DECLARE @LastYearValue FLOAT;
+    DECLARE @CurrentIndicatorName NVARCHAR(255);
+    DECLARE @CurrentYear INT;
+    DECLARE @CurrentMonth INT;
+    DECLARE @CurrentDay INT;
+    DECLARE @TopLevelId INT;
+    DECLARE @LocationId INT;
+    
+    -- Get current indicator details
+    SELECT @CurrentIndicatorName = i.Name, 
+           @CurrentYear = c.Year,
+           @CurrentMonth = c.Month,
+           @CurrentDay = c.Day,
+           @TopLevelId = dbo.fn_GetTopLevelParent(i.Id),
+           @LocationId = dv.LocationId
+    FROM Indicators i
+    INNER JOIN DataValues dv ON i.Id = dv.IndicatorId
+    INNER JOIN Calendars c ON dv.CalendarId = c.Id
+    WHERE i.Id = @CurrentIndicatorId AND dv.CalendarId = @CalendarId;
+    
+    -- Try to find exact match (same hierarchy, same indicator name, same month/day, previous year)
+    SELECT @LastYearValue = dv.Value
+    FROM DataValues dv
+    INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+    INNER JOIN Calendars c ON dv.CalendarId = c.Id
+    WHERE i.Name = @CurrentIndicatorName
+      AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId  -- Same hierarchy
+      AND c.Year = @CurrentYear - 1
+      AND c.Month = @CurrentMonth
+      AND c.Day = @CurrentDay
+      AND dv.LocationId = @LocationId;
+    
+    -- If exact date not found, try same month only (ignore day)
+    IF @LastYearValue IS NULL
+    BEGIN
+        SELECT @LastYearValue = dv.Value
+        FROM DataValues dv
+        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+        INNER JOIN Calendars c ON dv.CalendarId = c.Id
+        WHERE i.Name = @CurrentIndicatorName
+          AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId  -- Same hierarchy
+          AND c.Year = @CurrentYear - 1
+          AND c.Month = @CurrentMonth
+          AND dv.LocationId = @LocationId;
+    END
+    
+    -- If still not found, try same year only (any month/day in previous year)
+    IF @LastYearValue IS NULL
+    BEGIN
+        SELECT @LastYearValue = dv.Value
+        FROM DataValues dv
+        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+        INNER JOIN Calendars c ON dv.CalendarId = c.Id
+        WHERE i.Name = @CurrentIndicatorName
+          AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId  -- Same hierarchy
+          AND c.Year = @CurrentYear - 1
+          AND dv.LocationId = @LocationId;
+    END
+    
+    RETURN @LastYearValue;
+END
+GO
+
+
+CREATE OR ALTER   FUNCTION [dbo].[fn_GetTopLevelParent] (@IndicatorId INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @CurrentId INT = @IndicatorId;
+    DECLARE @ParentId INT;
+    DECLARE @TopLevelId INT = @IndicatorId;
+
+    WHILE @CurrentId IS NOT NULL
+    BEGIN
+        SELECT @ParentId = ParentId 
+        FROM Indicators 
+        WHERE Id = @CurrentId;
+        
+        IF @ParentId IS NOT NULL
+        BEGIN
+            SET @TopLevelId = @ParentId;
+            SET @CurrentId = @ParentId;
+        END
+        ELSE
+        BEGIN
+            SET @CurrentId = NULL;
+        END
+    END
+
+    RETURN @TopLevelId;
+END;
+GO
+
+
+
 CREATE OR ALTER TRIGGER [dbo].[trg_CalculateHierarchicalGrowth]
 ON [dbo].[DataValues]
 AFTER INSERT, UPDATE, DELETE
@@ -161,23 +191,110 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM inserted)
     BEGIN
-        UPDATE current_dv
+        -- Create a temporary table to store the data we need to update
+        CREATE TABLE #DataToUpdate (
+            DataValueId INT,
+            IndicatorId INT,
+            CurrentValue DECIMAL(18,2),
+            IndicatorName NVARCHAR(255),
+            ParentId INT,
+            TopLevelId INT,
+            PreviousValue DECIMAL(18,2),
+            HierarchyTotalValue DECIMAL(18,2),
+            CalendarId INT,
+            CurrentYear INT,
+            LastYearValue DECIMAL(18,2)
+        );
+
+        -- Insert data into temp table
+        INSERT INTO #DataToUpdate (DataValueId, IndicatorId, CurrentValue, IndicatorName, ParentId, CalendarId, CurrentYear)
+        SELECT 
+            dv.Id, 
+            dv.IndicatorId, 
+            dv.Value,
+            i.Name,
+            i.ParentId,
+            dv.CalendarId,
+            c.Year
+        FROM DataValues dv
+        INNER JOIN inserted ins ON dv.Id = ins.Id
+        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+        INNER JOIN Calendars c ON dv.CalendarId = c.Id;
+
+        -- Update top level IDs
+        UPDATE #DataToUpdate
+        SET TopLevelId = dbo.fn_GetTopLevelParent(IndicatorId);
+
+        -- Update previous values (hierarchical growth)
+        UPDATE #DataToUpdate
+        SET PreviousValue = dbo.fn_FindPreviousValue(IndicatorId);
+
+        -- Update last year values using string year comparison
+        UPDATE dtu
+        SET LastYearValue = last_year.Value
+        FROM #DataToUpdate dtu
+        OUTER APPLY (
+            -- Extract year number from current indicator name
+            SELECT CurrentYearNumber = TRY_CAST(dtu.IndicatorName AS INT)
+        ) year_check
+        OUTER APPLY (
+            -- If it's a year, look for previous year indicator
+            SELECT dv.Value
+            FROM DataValues dv
+            INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+            INNER JOIN Calendars c ON dv.CalendarId = c.Id
+            WHERE i.ParentId = dtu.ParentId  -- Same parent indicator
+              AND i.Name = CAST(year_check.CurrentYearNumber - 1 AS NVARCHAR(4))  -- Previous year as string
+              AND dbo.fn_GetTopLevelParent(i.Id) = dtu.TopLevelId  -- Same top-level hierarchy
+              AND c.Year = dtu.CurrentYear - 1  -- Previous calendar year
+        ) last_year
+        WHERE year_check.CurrentYearNumber IS NOT NULL;
+
+        -- Update hierarchy total values
+        UPDATE dtu
+        SET HierarchyTotalValue = calc.TotalValue
+        FROM #DataToUpdate dtu
+        CROSS APPLY (
+            SELECT SUM(dv_sibling.Value) as TotalValue
+            FROM DataValues dv_sibling
+            INNER JOIN Indicators i_sibling ON dv_sibling.IndicatorId = i_sibling.Id
+            WHERE i_sibling.Name = dtu.IndicatorName  -- Same indicator name
+            AND dbo.fn_GetTopLevelParent(i_sibling.Id) = dtu.TopLevelId  -- Same top-level hierarchy
+        ) calc;
+
+        -- Finally update the main table with all three metrics
+        UPDATE dv
         SET 
             GrowthSinceLastPeriod = 
                 CASE 
-                    WHEN prev_value IS NOT NULL AND prev_value <> 0 THEN
-                        ROUND(((current_dv.Value - prev_value) / prev_value) * 100, 2)
-                    WHEN prev_value = 0 AND current_dv.Value <> 0 THEN
+                    WHEN dtu.PreviousValue IS NOT NULL AND dtu.PreviousValue <> 0 THEN
+                        ROUND(((dtu.CurrentValue - dtu.PreviousValue) / dtu.PreviousValue) * 100, 2)
+                    WHEN dtu.PreviousValue = 0 AND dtu.CurrentValue <> 0 THEN
+                        100.0
+                    ELSE
+                        0.0
+                END,
+            PercentageOfParentTotal = 
+                CASE 
+                    WHEN dtu.HierarchyTotalValue IS NOT NULL AND dtu.HierarchyTotalValue <> 0 THEN
+                        ROUND((dtu.CurrentValue / dtu.HierarchyTotalValue) * 100, 2)
+                    ELSE
+                        0.0
+                END,
+            GrowthSinceLastYearPeriod = 
+                CASE 
+                    WHEN dtu.LastYearValue IS NOT NULL AND dtu.LastYearValue <> 0 THEN
+                        ROUND(((dtu.CurrentValue - dtu.LastYearValue) / dtu.LastYearValue) * 100, 2)
+                    WHEN dtu.LastYearValue = 0 AND dtu.CurrentValue <> 0 THEN
                         100.0
                     ELSE
                         0.0
                 END
-            
-        FROM DataValues current_dv
-        INNER JOIN inserted i ON current_dv.Id = i.Id
-        CROSS APPLY (
-            SELECT dbo.fn_FindPreviousValue(current_dv.IndicatorId) as prev_value
-        ) previous;
+        FROM DataValues dv
+        INNER JOIN #DataToUpdate dtu ON dv.Id = dtu.DataValueId;
+
+        -- Clean up
+        DROP TABLE #DataToUpdate;
     END
 END;
 GO
