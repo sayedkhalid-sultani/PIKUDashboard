@@ -30,6 +30,8 @@ const Login = lazy(() => import("../components/ui/Login"));
 const AdminContent = lazy(() => import("../components/ui/AdminContent"));
 const Map = lazy(() => import("../components/ui/map"));
 
+const CountryDashboard = lazy(() => import("../components/ui/CountryDashboard"));
+
 
 // Simple route-level fallback (keep it light)
 function RouteFallback() {
@@ -106,6 +108,14 @@ export default function AppRouter() {
             element={
               <Suspense fallback={<RouteFallback />}>
                 <Analyze />
+              </Suspense>
+            }
+          />
+          <Route
+            path="CountryDashboard"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <CountryDashboard />
               </Suspense>
             }
           />

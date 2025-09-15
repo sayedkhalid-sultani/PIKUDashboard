@@ -1,4 +1,32 @@
 .html2canvas-fix,
-.html2canvas-fix * {
-    color: #222;
+.html2canvas-fix *,
+.html2canvas-fix *:before,
+.html2canvas-fix *:after {
+    color: #222 !important;
+}
+
+/* Custom thin and impressive scrollbar for all scrollable areas */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #2563eb 40%, #38bdf8 100%);
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-corner {
+    background: #f3f4f6;
+}
+
+/* For Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2563eb #f3f4f6;
 }

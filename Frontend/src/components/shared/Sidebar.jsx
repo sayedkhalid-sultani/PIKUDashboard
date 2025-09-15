@@ -33,6 +33,9 @@ const Sidebar = () => {
 
         {/* Dashboard children */}
         <div className="flex flex-col space-y-1 pl-3 mt-1 border-l border-gray-200">
+          <NavLink to="dashboard/CountryDashboard" end className={linkClasses}>
+            Country Dashboard
+          </NavLink>
           <NavLink to="/dashboard/Map" className={linkClasses}>
             Country Map
           </NavLink>
