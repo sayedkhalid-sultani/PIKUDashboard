@@ -63,6 +63,8 @@ CREATE TABLE [dbo].[Locations](
     [Name] [nvarchar](100) NOT NULL,
     [Type] [nvarchar](50) NULL,
     [ParentId] [int] NULL,
+    -- Added to find the previous data value in the same location hierarchy
+    [OrderIndex] [int] NOT NULL,
     CONSTRAINT [FK_Locations_ParentId] FOREIGN KEY([ParentId]) REFERENCES [dbo].[Locations] ([Id])
 );
 
