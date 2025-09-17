@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, GeoJSON, TileLayer, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
 import ShowInFullScreen from '../shared/ShowInFullScreen';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -13,37 +13,18 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const provinceStyle = {
-    fillColor: '#fbbf24', // amber-400
-    weight: 2,
-    opacity: 1,
-    color: '#6366f1', // indigo-500 border
-    dashArray: '3',
-    fillOpacity: 0.5
+// single color + highlight
+const CIRCLE_COLOR = '#3b82f6';
+const HIGHLIGHT_COLOR = '#b6b4b2ff';
+
+const getRandomSize = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const getResponsiveZoom = () => {
+    if (window.innerWidth < 640) return 4;   // mobile (was 5)
+    if (window.innerWidth < 1024) return 5;  // tablet (was 6)
+    return 6;                                // desktop (was 7)
 };
 
-// Use a vibrant color palette for circles
-const circleColors = [
-    '#ef4444', // red-500
-    '#f59e42', // orange-400
-    '#22c55e', // green-500
-    '#3b82f6', // blue-500
-    '#a21caf', // purple-700
-    '#eab308', // yellow-500
-    '#14b8a6', // teal-500
-    '#f43f5e', // pink-500
-    '#0ea5e9', // sky-500
-    '#6366f1', // indigo-500
-];
-
-const getCircleColor = (idx) => circleColors[idx % circleColors.length];
-
-// Function to generate random size between min and max
-const getRandomSize = (min, max) => {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-// Predefined center points for Afghanistan provinces
+// predefined province centers (kept from your file)
 const provinceCenters = {
     "Badakhshan": [36.7348, 70.8120],
     "Badghis": [35.1670, 63.7690],
@@ -81,37 +62,52 @@ const provinceCenters = {
     "Zabul": [32.4000, 67.0000]
 };
 
-// Component to handle circle layer ordering
-const CirclesLayer = ({ circleData, geoData, onCircleClick }) => {
+// CirclesLayer: one Circle per province, hover handled on circle itself
+const CirclesLayer = ({ circles }) => {
     const map = useMap();
 
+    // bring circles to front after render for visibility
     useEffect(() => {
-        // Bring all circles to front after render
-        setTimeout(() => {
+        const t = setTimeout(() => {
             Object.values(map._layers).forEach(layer => {
-                // Only bring Circle layers to front
-                if (layer instanceof L.Circle) {
-                    layer.bringToFront();
-                }
+                if (layer instanceof L.Circle) layer.bringToFront();
             });
-        }, 200);
-    }, [circleData, map]);
+        }, 120);
+        return () => clearTimeout(t);
+    }, [map, circles]);
 
     return (
         <>
-            {circleData.map((circle, index) => (
+            {circles.map((c) => (
                 <Circle
-                    key={index}
-                    center={circle.position}
-                    radius={circle.radius}
+                    key={c.province}
+                    center={c.position}
+                    radius={c.radius}
                     pathOptions={{
-                        color: getCircleColor(index),
-                        fillColor: getCircleColor(index),
-                        fillOpacity: 0.85, // Not transparent
+                        color: CIRCLE_COLOR,
+                        fillColor: CIRCLE_COLOR,
+                        fillOpacity: 0.75,
                         weight: 2
                     }}
+                    // bind tooltip once and handle hover on circle
+                    whenCreated={(layer) => {
+                        try { layer.bindTooltip(c.province, { direction: 'top', sticky: true }); } catch { console.error("Failed to bind tooltip") }
+                    }}
                     eventHandlers={{
-                        click: () => onCircleClick(circle, geoData)
+                        mouseover: (e) => {
+                            const layer = e.target;
+                            layer.setStyle({ color: HIGHLIGHT_COLOR, fillColor: HIGHLIGHT_COLOR, fillOpacity: 0.95, weight: 3 });
+                            try { layer.bringToFront(); layer.openTooltip(); } catch {
+                                console.error("Failed to open tooltip");
+                            }
+                        },
+                        mouseout: (e) => {
+                            const layer = e.target;
+                            layer.setStyle({ color: CIRCLE_COLOR, fillColor: CIRCLE_COLOR, fillOpacity: 0.75, weight: 2 });
+                            try { layer.closeTooltip(); } catch {
+                                console.error("Failed to close tooltip");
+                            }
+                        }
                     }}
                 />
             ))}
@@ -119,154 +115,66 @@ const CirclesLayer = ({ circleData, geoData, onCircleClick }) => {
     );
 };
 
-const getResponsiveZoom = () => {
-    if (window.innerWidth < 640) return 5;      // Mobile
-    if (window.innerWidth < 1024) return 6;     // Tablet
-    return 7;                                   // Desktop
-};
-
-// --- Use ChartCard for each chart ---
-const Map = () => {
+export default function Map() {
     const [geoData, setGeoData] = useState(null);
+    const [circles, setCircles] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedProvince, setSelectedProvince] = useState(null);
-    const [circleData, setCircleData] = useState([]);
-    const [mapZoom, setMapZoom] = useState(getResponsiveZoom());
+    const [zoom, setZoom] = useState(getResponsiveZoom());
     const mapRef = useRef();
-    const modalRef = useRef();
 
-    // Update zoom on resize
     useEffect(() => {
-        const handleResize = () => setMapZoom(getResponsiveZoom());
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        const onResize = () => setZoom(getResponsiveZoom());
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
         fetch('/public/afghanistan-provinces.geojson')
-            .then(res => res.json())
+            .then(r => r.json())
             .then(data => {
+                if (cancelled) return;
                 setGeoData(data);
 
-                // Create circle data for each province
-                const circles = data.features.map((feature, idx) => {
-                    const provinceName = feature.properties.NAME_1;
-                    const center = provinceCenters[provinceName];
+                const computed = data.features.map((feat) => {
+                    const pname = feat.properties.NAME_1 || feat.properties.name || `prov-${Math.random()}`;
 
-                    // If no center found, try to calculate centroid from the feature geometry
+                    let center = provinceCenters[pname];
                     if (!center) {
-                        // console.warn(`No center found for province: ${provinceName}`);
-                        // Calculate centroid as fallback
-                        const coords = feature.geometry.type === 'Polygon'
-                            ? feature.geometry.coordinates[0]
-                            : feature.geometry.coordinates[0][0];
-
-                        let sumLat = 0;
-                        let sumLng = 0;
-                        let count = 0;
-
-                        for (const coord of coords) {
-                            sumLng += coord[0];
-                            sumLat += coord[1];
-                            count++;
-                        }
-
-                        const centroid = [sumLat / count, sumLng / count];
-                        return {
-                            position: centroid,
-                            radius: getRandomSize(5000, 20000),
-                            province: provinceName,
-                            color: getCircleColor(idx)
-                        };
+                        const coords = feat.geometry.type === 'Polygon' ? feat.geometry.coordinates[0] : feat.geometry.coordinates[0][0];
+                        let sumLng = 0, sumLat = 0, cnt = 0;
+                        for (const [lng, lat] of coords) { sumLng += lng; sumLat += lat; cnt++; }
+                        center = cnt ? [sumLat / cnt, sumLng / cnt] : [33.9391, 67.7100];
                     }
 
                     return {
+                        province: pname,
                         position: center,
-                        radius: getRandomSize(5000, 20000),
-                        province: provinceName,
-                        color: getCircleColor(idx)
+                        radius: getRandomSize(8000, 22000)
                     };
                 });
 
-                setCircleData(circles);
+                setCircles(computed);
             })
-            .catch(error => {
-                console.error('Error loading GeoJSON:', error);
-                setLoading(false);
-            })
+            .catch(err => console.error(err))
             .finally(() => setLoading(false));
+
+        return () => { cancelled = true; };
     }, []);
 
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') setSelectedProvince(null);
-        };
-        if (selectedProvince) {
-            window.addEventListener('keydown', handleKeyDown);
-        }
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedProvince]);
+    const geoJsonStyle = useCallback(() => ({
+        fillColor: '#585754ff',
+        weight: 2,
+        opacity: 1,
+        color: '#b8b8c2ff',
+        dashArray: '3',
+        fillOpacity: 0.5
+    }), []);
 
-    const handleCircleClick = (circle, geoData) => {
-        // Find the province feature for this circle
-        const provinceFeature = geoData.features.find(
-            f => f.properties.NAME_1 === circle.province
-        );
-
-        if (provinceFeature) {
-            // Create a temporary layer to get bounds
-            const tempLayer = L.geoJSON(provinceFeature);
-            const bounds = tempLayer.getBounds();
-
-            setSelectedProvince({
-                name: circle.province,
-                type: provinceFeature.properties.TYPE_1 || provinceFeature.properties.ENGTYPE_1 || 'Province',
-                details: provinceFeature.properties.VARNAME_1 || '',
-                bounds: bounds
-            });
-
-            if (mapRef.current) {
-                mapRef.current.fitBounds(bounds, { padding: [40, 40] });
-            }
-        }
-    };
-
-    const onEachProvince = (feature, layer) => {
-        layer.on({
-            click: () => {
-                setSelectedProvince({
-                    name: feature.properties.NAME_1,
-                    type: feature.properties.TYPE_1 || feature.properties.ENGTYPE_1 || 'Province',
-                    details: feature.properties.VARNAME_1 || '',
-                    bounds: layer.getBounds()
-                });
-                if (mapRef.current) {
-                    mapRef.current.fitBounds(layer.getBounds(), { padding: [40, 40] });
-                }
-            },
-            mouseover: () => {
-                layer.setStyle({
-                    weight: 3,
-                    color: '#666',
-                    dashArray: '',
-                    fillOpacity: 0.7
-                });
-                layer.bringToFront();
-            },
-            mouseout: () => {
-                layer.setStyle(provinceStyle);
-            }
-        });
-        layer.bindTooltip(feature.properties.NAME_1, { direction: 'center' });
-    };
-
-    if (loading) {
-        return <div className="flex items-center justify-center h-screen text-gray-600">Loading map data...</div>;
-    }
+    if (loading) return <div className="flex items-center justify-center h-screen text-gray-600">Loading map data...</div>;
 
     return (
         <div className="flex flex-col md:flex-row h-screen min-h-0 w-full">
-            {/* Map area: 3/4 width on md+, full width on mobile */}
             <div className="relative min-h-0 h-full w-full md:basis-3/4 md:flex-1 overflow-hidden">
                 <ShowInFullScreen
                     modalClassName="w-full h-full max-w-none"
@@ -275,71 +183,21 @@ const Map = () => {
                 >
                     <MapContainer
                         center={[33.9391, 67.7100]}
-                        zoom={mapZoom}
+                        zoom={zoom}
                         className="w-full h-full min-h-0"
-                        whenCreated={mapInstance => { mapRef.current = mapInstance; }}
+                        whenCreated={m => { mapRef.current = m; }}
                         style={{ width: "100%", height: "100%" }}
                     >
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
                             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                         />
-                        {geoData && (
-                            <GeoJSON
-                                data={geoData}
-                                style={provinceStyle}
-                                onEachFeature={onEachProvince}
-                            />
-                        )}
-                        {geoData && circleData.length > 0 && (
-                            <CirclesLayer
-                                circleData={circleData}
-                                geoData={geoData}
-                                onCircleClick={handleCircleClick}
-                            />
-                        )}
+                        {geoData && <GeoJSON data={geoData} style={geoJsonStyle()} />}
+                        {circles.length > 0 && <CirclesLayer circles={circles} />}
                     </MapContainer>
                 </ShowInFullScreen>
-                {selectedProvince && (
-                    <>
-                        <div
-                            className="absolute inset-0  bg-opacity-20 backdrop-blur-sm z-[1000]"
-                            onClick={() => setSelectedProvince(null)}
-                        />
-                        <div
-                            ref={modalRef}
-                            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-90 border border-gray-200 shadow-xl rounded-lg p-6 w-full max-w-md z-[1001]"
-                            tabIndex={-1}
-                            aria-modal="true"
-                            role="dialog"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <button
-                                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl font-bold"
-                                onClick={() => setSelectedProvince(null)}
-                                aria-label="Close modal"
-                            >
-                                &times;
-                            </button>
-                            <h2 className="text-2xl font-bold text-blue-800 mb-2">{selectedProvince.name}</h2>
-                            <p className="text-gray-700 mb-3">Type: {selectedProvince.type}</p>
-                            {selectedProvince.details && (
-                                <p className="text-gray-600 mb-4 italic">{selectedProvince.details}</p>
-                            )}
-                            <div className="bg-blue-50 p-4 rounded-md">
-                                <h3 className="font-semibold text-blue-700 mb-2">Province Information</h3>
-                                <p className="text-sm text-gray-600">
-                                    Additional information about {selectedProvince.name} would be displayed here.
-                                </p>
-                            </div>
-                            <div className="mt-4 text-xs text-gray-400 text-center">
-                                Press ESC or click outside to close
-                            </div>
-                        </div>
-                    </>
-                )}
             </div>
-            {/* Charts & Indicators: 1/4 width on md+, full width on mobile, scrolls if overflow */}
+
             <div className="min-h-0 h-full w-full md:basis-1/4 md:flex-1 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-200 p-4 md:p-6 space-y-6 bg-white">
                 <h2 className="text-2xl font-bold mb-6 text-blue-700">Charts & Indicators</h2>
 
@@ -441,7 +299,7 @@ const Map = () => {
                 </ShowInFullScreen>
 
                 {/* Composed Chart */}
-                <ShowInFullScreen modalClassName='w-7xl py-20'>
+                <ShowInFullScreen >
                     <div className="mb-2">
                         <h3 className="text-lg font-semibold text-blue-700">Education, Health & GDP by Province</h3>
                         <p className="text-xs text-gray-500">Composed chart showing education, health scores, and GDP for selected provinces.</p>
@@ -471,6 +329,4 @@ const Map = () => {
             </div>
         </div>
     );
-};
-
-export default Map;
+}

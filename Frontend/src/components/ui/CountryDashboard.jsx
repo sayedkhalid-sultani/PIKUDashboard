@@ -57,7 +57,6 @@ export default function CountryDashboard() {
                         {prevTab === "analyze" && <CountryDashboardAnalyze />}
                     </div>
                 )}
-                {/* Active tab content animates in */}
                 <div
                     key={activeTab}
                     className={`absolute inset-0 transition-all duration-300 ease-in-out ${animating ? "opacity-0 -translate-x-12" : "opacity-100 translate-x-0"}`}

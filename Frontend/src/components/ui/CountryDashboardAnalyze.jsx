@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, GeoJSON, TileLayer, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import ShowInFullScreen from '../shared/ShowInFullScreen';
 
 // Only two colors for circle groups
 const groupColors = ["#3b82f6", "#f59e42"];
@@ -46,10 +47,10 @@ const provinceCenters = {
 };
 
 const provinceStyle = {
-    fillColor: '#fbbf24',
+    fillColor: '#777776ff',
     weight: 2,
     opacity: 1,
-    color: '#6366f1',
+    color: '#757575ff',
     dashArray: '3',
     fillOpacity: 0.5
 };
@@ -146,42 +147,48 @@ function CountryDashboardAnalyze() {
             {/* Responsive wrapper for map area */}
             <div className="md:w-5/7 flex-1 min-h-0 h-full">
                 <div className="w-full h-full min-h-0 rounded-lg shadow">
-                    <MapContainer
-                        center={[33.9391, 67.7100]}
-                        zoom={6}
-                        className="w-full h-full"
-                        style={{ width: "100%", height: "100%" }}
+                    <ShowInFullScreen
+                        modalClassName="w-full h-full max-w-none"
+                        previewClassName="relative w-full h-full"
+                        containerClassName="w-full h-full p-0 m-0"
                     >
-                        <TileLayer
-                            attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
-                            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                        />
-                        {geoData && (
-                            <GeoJSON
-                                data={geoData}
-                                style={provinceStyle}
+                        <MapContainer
+                            center={[33.9391, 67.7100]}
+                            zoom={6}
+                            className="w-full h-full"
+                            style={{ width: "100%", height: "100%" }}
+                        >
+                            <TileLayer
+                                attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
+                                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                             />
-                        )}
-                        {circleGroups.length > 0 && (
-                            <>
-                                {circleGroups.map((group) =>
-                                    group.circles.map((circle, cIdx) => (
-                                        <Circle
-                                            key={`${group.province}-${cIdx}`}
-                                            center={circle.position}
-                                            radius={circle.radius}
-                                            pathOptions={{
-                                                color: circle.color,
-                                                fillColor: circle.color,
-                                                fillOpacity: 0.7,
-                                                weight: 2
-                                            }}
-                                        />
-                                    ))
-                                )}
-                            </>
-                        )}
-                    </MapContainer>
+                            {geoData && (
+                                <GeoJSON
+                                    data={geoData}
+                                    style={provinceStyle}
+                                />
+                            )}
+                            {circleGroups.length > 0 && (
+                                <>
+                                    {circleGroups.map((group) =>
+                                        group.circles.map((circle, cIdx) => (
+                                            <Circle
+                                                key={`${group.province}-${cIdx}`}
+                                                center={circle.position}
+                                                radius={circle.radius}
+                                                pathOptions={{
+                                                    color: circle.color,
+                                                    fillColor: circle.color,
+                                                    fillOpacity: 0.7,
+                                                    weight: 2
+                                                }}
+                                            />
+                                        ))
+                                    )}
+                                </>
+                            )}
+                        </MapContainer>
+                    </ShowInFullScreen>
                 </div>
             </div>
         </div>
