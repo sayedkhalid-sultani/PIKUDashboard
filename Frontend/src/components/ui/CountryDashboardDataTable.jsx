@@ -1,5 +1,6 @@
 import React from "react";
 import DataTable from "react-data-table-component";
+import { ExportAsExcelHtml } from '../../utils/downloaHelper';
 
 const dummyData = [
     { id: 1, province: "Kabul", population: 5000000, literacy: 85, gdp: 2.1 },
@@ -78,10 +79,20 @@ const customStyles = {
     }
 };
 
+
+
 function CountryDashboardDataTable() {
     return (
-        <div className="bg-white rounded-lg shadow p-6 w-full  mx-auto">
-            <h2 className="text-xl font-bold text-blue-700 mb-4">Province Data Table</h2>
+        <div className="bg-white rounded-lg shadow p-6 w-full mx-auto">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-blue-700">Province Data Table</h2>
+                <button
+                    onClick={() => ExportAsExcelHtml(dummyData, "Province Data", "province_data")}
+                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 focus:outline-none"
+                >
+                    Export Excel
+                </button>
+            </div>
             <DataTable
                 columns={columns}
                 data={dummyData}

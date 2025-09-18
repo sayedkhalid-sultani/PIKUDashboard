@@ -14,8 +14,8 @@ L.Icon.Default.mergeOptions({
 });
 
 // single color + highlight
-const CIRCLE_COLOR = '#3b82f6';
-const HIGHLIGHT_COLOR = '#b6b4b2ff';
+const CIRCLE_COLOR = '#3b83f6b9';
+const HIGHLIGHT_COLOR = '#3b83f6b9';
 
 const getRandomSize = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const getResponsiveZoom = () => {
@@ -166,16 +166,16 @@ export default function Map() {
         fillColor: '#585754ff',
         weight: 2,
         opacity: 1,
-        color: '#b8b8c2ff',
+        color: '#dbdbdbff',
         dashArray: '3',
-        fillOpacity: 0.5
+        fillOpacity: 0.4
     }), []);
 
     if (loading) return <div className="flex items-center justify-center h-screen text-gray-600">Loading map data...</div>;
 
     return (
         <div className="flex flex-col md:flex-row h-screen min-h-0 w-full">
-            <div className="relative min-h-0 h-full w-full md:basis-3/4 md:flex-1 overflow-hidden">
+            <div className="relative min-h-0 h-full w-full md:basis-2/4 md:flex-1 overflow-hidden">
                 <ShowInFullScreen
                     modalClassName="w-full h-full max-w-none"
                     previewClassName="relative w-full h-full"
@@ -190,7 +190,7 @@ export default function Map() {
                     >
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
-                            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                         />
                         {geoData && <GeoJSON data={geoData} style={geoJsonStyle()} />}
                         {circles.length > 0 && <CirclesLayer circles={circles} />}
@@ -198,134 +198,141 @@ export default function Map() {
                 </ShowInFullScreen>
             </div>
 
-            <div className="min-h-0 h-full w-full md:basis-1/4 md:flex-1 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-200 p-4 md:p-6 space-y-6 bg-white">
+            <div className="min-h-0 h-full w-full md:basis-2/4 md:flex-1 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-200 p-4 md:p-6 space-y-6 bg-white">
                 <h2 className="text-2xl font-bold mb-6 text-blue-700">Charts & Indicators</h2>
 
-
                 {/* Bar Chart */}
-                <ShowInFullScreen>
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-blue-700">Population Density by Province</h3>
-                        <p className="text-xs text-gray-500">Shows population density, literacy, and employment rates for major provinces.</p>
-                    </div>
-                    <div id="bar-chart">
+                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+                    <ShowInFullScreen>
+                        <div className="mb-2">
+                            <h3 className="text-lg font-semibold text-blue-700">Population Density by Province</h3>
+                            <p className="text-xs text-gray-500">Shows population density, literacy, and employment rates for major provinces.</p>
+                        </div>
+                        <div id="bar-chart">
+                            <ResponsiveContainer width="100%" height={240}>
+                                <BarChart
+                                    data={[
+                                        { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
+                                        { province: 'Herat', density: 800, literacy: 78, employment: 65 },
+                                        { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
+                                        { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
+                                        { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
+                                        { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
+                                        { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
+                                        { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                                    ]}
+                                    margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                                >
+                                    <XAxis dataKey="province" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="density" fill="#2563eb" name="Density" />
+                                    <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
+                                    <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </ShowInFullScreen>
+                </div>
+
+                {/* Pie Chart */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+                    <ShowInFullScreen>
+                        <div className="mb-2">
+                            <h3 className="text-lg font-semibold text-blue-700">Access to Basic Services</h3>
+                            <p className="text-xs text-gray-500">Pie chart of access to water, electricity, internet, healthcare, and education.</p>
+                        </div>
                         <ResponsiveContainer width="100%" height={240}>
-                            <BarChart
+                            <PieChart>
+                                <Pie
+                                    data={[
+                                        { name: 'Water', value: 400 },
+                                        { name: 'Electricity', value: 300 },
+                                        { name: 'Internet', value: 250 },
+                                        { name: 'Healthcare', value: 200 },
+                                        { name: 'Education', value: 180 }
+                                    ]}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={70}
+                                    label
+                                >
+                                    <Cell fill="#3b82f6" />
+                                    <Cell fill="#fbbf24" />
+                                    <Cell fill="#22c55e" />
+                                    <Cell fill="#a21caf" />
+                                    <Cell fill="#ef4444" />
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </ShowInFullScreen>
+                </div>
+
+                {/* Line Chart */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+                    <ShowInFullScreen>
+                        <div className="mb-2">
+                            <h3 className="text-lg font-semibold text-blue-700">Population & GDP Growth</h3>
+                            <p className="text-xs text-gray-500">Line chart showing population and GDP growth over years.</p>
+                        </div>
+                        <ResponsiveContainer width="100%" height={200}>
+                            <LineChart
                                 data={[
-                                    { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
-                                    { province: 'Herat', density: 800, literacy: 78, employment: 65 },
-                                    { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
-                                    { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
-                                    { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
-                                    { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
-                                    { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
-                                    { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                                    { year: 2020, population: 2.1, gdp: 1.2 },
+                                    { year: 2021, population: 2.5, gdp: 1.4 },
+                                    { year: 2022, population: 3.0, gdp: 1.7 },
+                                    { year: 2023, population: 2.7, gdp: 1.9 },
+                                    { year: 2024, population: 3.2, gdp: 2.2 },
+                                    { year: 2025, population: 3.5, gdp: 2.5 }
+                                ]}
+                                margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                            >
+                                <XAxis dataKey="year" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Line type="monotone" dataKey="population" stroke="#22c55e" strokeWidth={2} name="Population Growth" />
+                                <Line type="monotone" dataKey="gdp" stroke="#6366f1" strokeWidth={2} name="GDP Growth" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </ShowInFullScreen>
+                </div>
+
+                {/* Composed Chart */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+                    <ShowInFullScreen>
+                        <div className="mb-2">
+                            <h3 className="text-lg font-semibold text-blue-700">Education, Health & GDP by Province</h3>
+                            <p className="text-xs text-gray-500">Composed chart showing education, health scores, and GDP for selected provinces.</p>
+                        </div>
+                        <ResponsiveContainer width="100%" height={240}>
+                            <ComposedChart
+                                data={[
+                                    { province: 'Kabul', education: 80, health: 70, gdp: 2.1 },
+                                    { province: 'Herat', education: 65, health: 60, gdp: 1.8 },
+                                    { province: 'Balkh', education: 60, health: 55, gdp: 1.2 },
+                                    { province: 'Kandahar', education: 55, health: 50, gdp: 1.0 },
+                                    { province: 'Nangarhar', education: 50, health: 45, gdp: 0.9 }
                                 ]}
                                 margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
                             >
                                 <XAxis dataKey="province" />
-                                <YAxis />
+                                <YAxis yAxisId="left" label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }} />
+                                <YAxis yAxisId="right" orientation="right" label={{ value: 'GDP (Billion $)', angle: 90, position: 'insideRight' }} />
                                 <Tooltip />
                                 <Legend />
-                                <Bar dataKey="density" fill="#2563eb" name="Density" />
-                                <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
-                                <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
-                            </BarChart>
+                                <Bar yAxisId="left" dataKey="education" fill="#6366f1" name="Education" />
+                                <Bar yAxisId="left" dataKey="health" fill="#f59e42" name="Health" />
+                                <Line yAxisId="right" type="monotone" dataKey="gdp" stroke="#22c55e" strokeWidth={2} name="GDP" />
+                            </ComposedChart>
                         </ResponsiveContainer>
-                    </div>
-                </ShowInFullScreen>
-
-                {/* Pie Chart */}
-                <ShowInFullScreen>
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-blue-700">Access to Basic Services</h3>
-                        <p className="text-xs text-gray-500">Pie chart of access to water, electricity, internet, healthcare, and education.</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                        <PieChart>
-                            <Pie
-                                data={[
-                                    { name: 'Water', value: 400 },
-                                    { name: 'Electricity', value: 300 },
-                                    { name: 'Internet', value: 250 },
-                                    { name: 'Healthcare', value: 200 },
-                                    { name: 'Education', value: 180 }
-                                ]}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={70}
-                                label
-                            >
-                                <Cell fill="#3b82f6" />
-                                <Cell fill="#fbbf24" />
-                                <Cell fill="#22c55e" />
-                                <Cell fill="#a21caf" />
-                                <Cell fill="#ef4444" />
-                            </Pie>
-                            <Tooltip />
-                            <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </ShowInFullScreen>
-
-                {/* Line Chart */}
-                <ShowInFullScreen>
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-blue-700">Population & GDP Growth</h3>
-                        <p className="text-xs text-gray-500">Line chart showing population and GDP growth over years.</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <LineChart
-                            data={[
-                                { year: 2020, population: 2.1, gdp: 1.2 },
-                                { year: 2021, population: 2.5, gdp: 1.4 },
-                                { year: 2022, population: 3.0, gdp: 1.7 },
-                                { year: 2023, population: 2.7, gdp: 1.9 },
-                                { year: 2024, population: 3.2, gdp: 2.2 },
-                                { year: 2025, population: 3.5, gdp: 2.5 }
-                            ]}
-                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
-                        >
-                            <XAxis dataKey="year" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="population" stroke="#22c55e" strokeWidth={2} name="Population Growth" />
-                            <Line type="monotone" dataKey="gdp" stroke="#6366f1" strokeWidth={2} name="GDP Growth" />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </ShowInFullScreen>
-
-                {/* Composed Chart */}
-                <ShowInFullScreen >
-                    <div className="mb-2">
-                        <h3 className="text-lg font-semibold text-blue-700">Education, Health & GDP by Province</h3>
-                        <p className="text-xs text-gray-500">Composed chart showing education, health scores, and GDP for selected provinces.</p>
-                    </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                        <ComposedChart
-                            data={[
-                                { province: 'Kabul', education: 80, health: 70, gdp: 2.1 },
-                                { province: 'Herat', education: 65, health: 60, gdp: 1.8 },
-                                { province: 'Balkh', education: 60, health: 55, gdp: 1.2 },
-                                { province: 'Kandahar', education: 55, health: 50, gdp: 1.0 },
-                                { province: 'Nangarhar', education: 50, health: 45, gdp: 0.9 }
-                            ]}
-                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
-                        >
-                            <XAxis dataKey="province" />
-                            <YAxis yAxisId="left" label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }} />
-                            <YAxis yAxisId="right" orientation="right" label={{ value: 'GDP (Billion $)', angle: 90, position: 'insideRight' }} />
-                            <Tooltip />
-                            <Legend />
-                            <Bar yAxisId="left" dataKey="education" fill="#6366f1" name="Education" />
-                            <Bar yAxisId="left" dataKey="health" fill="#f59e42" name="Health" />
-                            <Line yAxisId="right" type="monotone" dataKey="gdp" stroke="#22c55e" strokeWidth={2} name="GDP" />
-                        </ComposedChart>
-                    </ResponsiveContainer>
-                </ShowInFullScreen>
+                    </ShowInFullScreen>
+                </div>
             </div>
         </div>
     );

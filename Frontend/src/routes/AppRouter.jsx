@@ -16,8 +16,6 @@ const CountryProfile = lazy(() => import("../components/ui/CountryProfile"));
 const CountryProfilemui = lazy(() =>
   import("../components/ui/CountryProfilemui")
 );
-const Analyze = lazy(() => import("../components/ui/Analyze"));
-
 const Indicators = lazy(() => import("../components/ui/Indicators"));
 const Users = lazy(() => import("../components/ui/admin/Users"));
 // If you combined Register+Edit into one, point both routes to that file.
@@ -99,15 +97,6 @@ export default function AppRouter() {
             element={
               <Suspense fallback={<RouteFallback />}>
                 <CountryProfilemui />
-              </Suspense>
-            }
-          />
-
-          <Route
-            path="Analyze"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <Analyze />
               </Suspense>
             }
           />
