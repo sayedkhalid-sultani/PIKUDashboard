@@ -198,80 +198,68 @@ AS
 BEGIN
     DECLARE @LastYearValue DECIMAL(18,2) = NULL;
     DECLARE @Name NVARCHAR(255);
-    DECLARE @Year INT, @Month INT, @Day INT, @Quarter INT, @TopLevelId INT;
+    DECLARE @Year INT, @Month INT, @Day INT, @Quarter INT;
+    DECLARE @TopLevelId INT;
 
+    -- Get indicator and calendar info
     SELECT 
         @Name = i.Name,
         @Year = c.Year,
         @Month = c.Month,
         @Day = c.Day,
-        @Quarter = c.Quarter,
-        @TopLevelId = dbo.fn_GetTopLevelParent(i.Id)
+        @Quarter = c.Quarter
     FROM Indicators i
     INNER JOIN DataValues dv ON dv.IndicatorId = i.Id
     INNER JOIN Calendars c ON c.Id = dv.CalendarId
-    WHERE i.Id = @CurrentIndicatorId AND dv.CalendarId = @CalendarId;
+    WHERE i.Id = @CurrentIndicatorId
+      AND dv.CalendarId = @CalendarId;
 
-    ----------------------------------------------------
-    -- Priority 1: exact same date (month + day, last yr)
-    ----------------------------------------------------
+    IF @Name IS NULL OR @Year IS NULL
+        RETURN NULL;
+
+    -- Resolve top-level parent
+    SET @TopLevelId = dbo.fn_GetTopLevelParent(@CurrentIndicatorId);
+
+    -- Build descendant set ONCE
+    ;WITH Descendants AS (
+        SELECT Id
+        FROM Indicators
+        WHERE Id = @TopLevelId
+        UNION ALL
+        SELECT child.Id
+        FROM Indicators child
+        INNER JOIN Descendants d ON child.ParentId = d.Id
+    )
+    -- Priority check in order
     SELECT TOP (1) @LastYearValue = dv.Value
     FROM DataValues dv
     INNER JOIN Indicators i ON dv.IndicatorId = i.Id
     INNER JOIN Calendars c ON dv.CalendarId = c.Id
+    INNER JOIN Descendants d ON i.Id = d.Id
     WHERE i.Name = @Name
-      AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId
       AND c.Year = @Year - 1
-      AND c.Month = @Month
-      AND c.Day = @Day
-    ORDER BY c.Month DESC, c.Day DESC;
-
-    ----------------------------------------------------
-    -- Priority 2: same month in previous year
-    ----------------------------------------------------
-    IF @LastYearValue IS NULL
-    BEGIN
-        SELECT TOP (1) @LastYearValue = dv.Value
-        FROM DataValues dv
-        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-        INNER JOIN Calendars c ON dv.CalendarId = c.Id
-        WHERE i.Name = @Name
-          AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId
-          AND c.Year = @Year - 1
-          AND c.Month = @Month
-        ORDER BY c.Month DESC, c.Day DESC;
-    END
-
-    ----------------------------------------------------
-    -- Priority 3: same quarter in previous year
-    ----------------------------------------------------
-    IF @LastYearValue IS NULL
-    BEGIN
-        SELECT TOP (1) @LastYearValue = dv.Value
-        FROM DataValues dv
-        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-        INNER JOIN Calendars c ON dv.CalendarId = c.Id
-        WHERE i.Name = @Name
-          AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId
-          AND c.Year = @Year - 1
-          AND c.Quarter = @Quarter
-        ORDER BY c.Month DESC, c.Day DESC;
-    END
-
-    ----------------------------------------------------
-    -- Priority 4: any date in previous year (latest)
-    ----------------------------------------------------
-    IF @LastYearValue IS NULL
-    BEGIN
-        SELECT TOP (1) @LastYearValue = dv.Value
-        FROM DataValues dv
-        INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-        INNER JOIN Calendars c ON dv.CalendarId = c.Id
-        WHERE i.Name = @Name
-          AND dbo.fn_GetTopLevelParent(i.Id) = @TopLevelId
-          AND c.Year = @Year - 1
-        ORDER BY c.Month DESC, c.Day DESC;
-    END
+      AND (
+            -- Priority 1: exact same date
+            (c.Month = @Month AND c.Day = @Day)
+            OR
+            -- Priority 2: same month
+            (c.Month = @Month)
+            OR
+            -- Priority 3: same quarter
+            (c.Quarter = @Quarter)
+            OR
+            -- Priority 4: any date
+            1 = 1
+      )
+    ORDER BY
+        CASE 
+            WHEN c.Month = @Month AND c.Day = @Day THEN 1  -- Priority 1
+            WHEN c.Month = @Month THEN 2                    -- Priority 2
+            WHEN c.Quarter = @Quarter THEN 3                -- Priority 3
+            ELSE 4                                          -- Priority 4
+        END,
+        c.Month DESC,
+        c.Day DESC;
 
     RETURN @LastYearValue;
 END;
