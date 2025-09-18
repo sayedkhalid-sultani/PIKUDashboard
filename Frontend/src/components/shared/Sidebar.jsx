@@ -40,10 +40,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         {/* Navigation */}
         <nav className="space-y-1 flex-1">
           {/* Dashboard */}
-          <NavLink to="/dashboard" end className={linkClasses}>
+          {/* <NavLink to="/dashboard" end className={linkClasses}>
             <FiHome className="text-lg" />
             <span>Dashboard</span>
-          </NavLink>
+          </NavLink> */}
           {/* Dashboard children */}
           <NavLink to="/dashboard/CountryDashboard" className={linkClasses}>
             <FiMap className="text-lg" />

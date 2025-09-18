@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiMaximize, FiMinimize, FiPrinter, FiDownload, FiX } from 'react-icons/fi';
+import { FiMaximize, FiX, FiPrinter, FiDownload } from 'react-icons/fi'; // Replaced FiMinimize with FiX
 import { useReactToPrint } from 'react-to-print';
 import html2canvas from 'html2canvas';
 
@@ -63,8 +63,6 @@ function ShowInFullScreen({
             try {
                 const canvas = await html2canvas(chartEl, {
                     scale: 2,
-                    // useCORS: true,
-                    // backgroundColor: "#fff"
                 });
                 const image = canvas.toDataURL("image/png");
                 const link = document.createElement('a');
@@ -107,7 +105,6 @@ function ShowInFullScreen({
                         onClick={e => e.stopPropagation() && setOpen(false)}
                     >
                         <div
-                            // <-- Attach ref here!
                             className={`relative bg-white bg-opacity-90 border border-gray-200 shadow-xl rounded-lg ${modalClassName} transition-all duration-300 ${showOpenAnim ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
                         >
                             {/* Grouped action buttons */}
@@ -134,10 +131,10 @@ function ShowInFullScreen({
                                     <button
                                         className="px-2 py-1 hover:bg-red-50 transition flex items-center justify-center border-l border-gray-200"
                                         onClick={() => setOpen(false)}
-                                        title="Close"
-                                        aria-label="Close full screen"
+                                        title="Exit full screen"
+                                        aria-label="Exit full screen"
                                     >
-                                        <FiMinimize size={20} />
+                                        <FiX size={20} /> {/* Changed icon to FiX */}
                                     </button>
                                 </div>
                             </div>

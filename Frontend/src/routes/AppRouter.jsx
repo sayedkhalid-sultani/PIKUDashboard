@@ -8,28 +8,19 @@ import HomeRedirect from "./HomeRedirect";
 
 // --- Lazy page/layout chunks ---
 const Layout = lazy(() => import("../components/shared/Layout"));
-
-const DashboardContent = lazy(() =>
-  import("../components/ui/DashboardContent")
-);
+const DashboardContent = lazy(() => import("../components/ui/DashboardContent"));
 const CountryProfile = lazy(() => import("../components/ui/CountryProfile"));
-const CountryProfilemui = lazy(() =>
-  import("../components/ui/CountryProfilemui")
-);
+const CountryProfilemui = lazy(() => import("../components/ui/CountryProfilemui"));
 const Indicators = lazy(() => import("../components/ui/Indicators"));
 const Users = lazy(() => import("../components/ui/admin/Users"));
-// If you combined Register+Edit into one, point both routes to that file.
-// Otherwise keep these two:
 const RegisterUser = lazy(() => import("../components/ui/admin/RegisterUser"));
 const EditUser = lazy(() => import("../components/ui/admin/EditUser"));
-
 const ChangePassword = lazy(() => import("../components/ui/ChangePassword"));
 const Login = lazy(() => import("../components/ui/Login"));
 const AdminContent = lazy(() => import("../components/ui/AdminContent"));
 const Map = lazy(() => import("../components/ui/map"));
-
 const CountryDashboard = lazy(() => import("../components/ui/CountryDashboard"));
-
+const NotFound = lazy(() => import("../components/shared/NotFound404"));
 
 // Simple route-level fallback (keep it light)
 function RouteFallback() {
@@ -41,7 +32,6 @@ export default function AppRouter() {
     <Routes>
       {/* Root: send to dashboard if authed, else login */}
       <Route path="/" element={<HomeRedirect />} />
-
 
       {/* Public-only (login) */}
       <Route
@@ -91,7 +81,6 @@ export default function AppRouter() {
               </Suspense>
             }
           />
-
           <Route
             path="CountryProfilemui"
             element={
@@ -167,7 +156,14 @@ export default function AppRouter() {
       </Route>
 
       {/* 404 */}
-      <Route path="*" element={<div className="p-6">Not found</div>} />
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={<RouteFallback />}>
+            <NotFound />
+          </Suspense>
+        }
+      />
     </Routes>
   );
 }
