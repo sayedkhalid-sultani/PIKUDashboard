@@ -1,0 +1,177 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { MapContainer, GeoJSON, TileLayer } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import ShowInFullScreen from '../shared/ShowInFullScreen';
+const CHORO_DARK = '#08306b'; // dark blue
+const CHORO_LIGHT = '#deebf7'; // light blue
+
+const provinceStyleBase = (fillColor) => ({
+    fillColor,
+    weight: 1,
+    opacity: 1,
+    color: '#ffffff',
+    dashArray: '',
+    fillOpacity: 0.85
+});
+
+const hexToRgb = (hex) => {
+    const v = hex.replace('#', '');
+    return [parseInt(v.substring(0, 2), 16), parseInt(v.substring(2, 4), 16), parseInt(v.substring(4, 6), 16)];
+};
+
+const rgbToHex = (r, g, b) => '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+
+const interpHex = (a, b, t) => {
+    const A = hexToRgb(a), B = hexToRgb(b);
+    const R = Math.round(A[0] + (B[0] - A[0]) * t);
+    const G = Math.round(A[1] + (B[1] - A[1]) * t);
+    const Bc = Math.round(A[2] + (B[2] - A[2]) * t);
+    return rgbToHex(R, G, Bc);
+};
+
+const randomText = [
+    "Population is growing rapidly.",
+    "Literacy rate is improving.",
+    "Economic growth is steady.",
+    "Healthcare facilities are expanding.",
+    "Infrastructure development is ongoing.",
+    "Tourism is increasing.",
+    "Agriculture is flourishing.",
+    "Technology adoption is rising."
+];
+
+const getRandomText = () => randomText[Math.floor(Math.random() * randomText.length)];
+
+function SingleIndicator() {
+    const [geoData, setGeoData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [values, setValues] = useState({}); // { province: value }
+
+    useEffect(() => {
+        let mounted = true;
+        fetch('/public/afghanistan-provinces.geojson')
+            .then(res => res.json())
+            .then(data => {
+                if (!mounted) return;
+                setGeoData(data);
+
+                const vals = {};
+                data.features.forEach((f, idx) => {
+                    const pname = f.properties.NAME_1 || `prov-${idx}`;
+                    vals[pname] = Math.round(Math.random() * 10000); // Random value for demonstration
+                });
+                setValues(vals);
+            })
+            .catch(e => console.error(e))
+            .finally(() => setLoading(false));
+        return () => { mounted = false; };
+    }, []);
+
+    const colorMap = useMemo(() => {
+        if (!geoData) return {};
+        const provinces = geoData.features.map(f => f.properties.NAME_1);
+        const v1 = provinces.map(p => values[p] || 0);
+        const min = Math.min(...v1);
+        const max = Math.max(...v1) || 1;
+
+        const map = {};
+        geoData.features.forEach((f) => {
+            const pname = f.properties.NAME_1;
+            const val = values[pname] || min;
+            const t = (val - min) / Math.max(1, (max - min)); // Normalize value to 0..1
+            map[pname] = interpHex(CHORO_DARK, CHORO_LIGHT, t);
+        });
+
+        return map;
+    }, [geoData, values]);
+
+    if (loading) return <div className="flex items-center justify-center h-screen text-gray-600">Loading map...</div>;
+
+    const styleForFeature = (feature) => {
+        const pname = feature.properties.NAME_1;
+        const fill = colorMap[pname] || CHORO_LIGHT;
+        return provinceStyleBase(fill);
+    };
+
+    const onEachFeature = (feature, layer) => {
+        layer.on({
+            mouseover: () => {
+                const hoverText = getRandomText();
+                layer.bindTooltip(
+                    `<div style="font-size: 16px; font-weight: bold; padding: 8px; color: #0f172a;">
+                        ${feature.properties.NAME_1}<br>${hoverText}
+                    </div>`,
+                    { direction: 'top', sticky: true }
+                ).openTooltip();
+            },
+            mouseout: () => {
+                layer.closeTooltip();
+            }
+        });
+    };
+
+    return (
+        <div className="flex h-full w-full min-h-0">
+            {/* Sidebar for indicators */}
+            <div className="w-full md:w-2/7 flex-none min-h-0 flex flex-col gap-6 overflow-y-auto">
+                <div className="w-full bg-white px-6 flex flex-col gap-4">
+                    <div className="w-full bg-white  flex flex-col mt-4">
+                        <h2 className="text-2xl font-bold text-blue-700">Please select the indicator</h2>
+                        <p className="text-gray-500 text-base mt-1">
+                            Choose the indicator from the dropdowns below to visualize and compare data for Afghanistan provinces.
+                        </p>
+                    </div>
+                    <select
+                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    >
+                        <option>Population</option>
+                        <option>Male Literacy Rate</option>
+                        <option>GDP</option>
+                    </select>
+                    <h3 className="text-lg font-bold text-blue-700 mb-2">Year</h3>
+                    <select
+                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    >
+                        <option>2020</option>
+                        <option>2021</option>
+                        <option>2022</option>
+                    </select>
+                    <label className="text-blue-700 font-semibold ">Value</label>
+                    <div className="w-full h-1 rounded bg-gradient-to-r from-blue-500 to-orange-400" />
+                    <label className="text-blue-700 font-semibold mb-2">Definition</label>
+                    <textarea
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                        defaultValue="You can add your analysis or comments here about the selected indicators and provinces."
+                    />
+                </div>
+            </div>
+
+            {/* Map */}
+            <div className="md:w-5/7 flex-1 min-h-0 h-full">
+                <ShowInFullScreen
+                    modalClassName="w-full h-full max-w-none"
+                    previewClassName="relative w-full h-full"
+                    containerClassName="w-full h-full p-0 m-0"
+                >
+                    <MapContainer
+                        key={`single-indicator-map-${geoData ? geoData.features.length : 0}`}
+                        center={[33.9391, 67.7100]} zoom={6} className="w-full h-full" style={{ width: "100%", height: "100%" }}>
+                        <TileLayer
+                            attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
+                            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                        />
+                        {geoData && (
+                            <GeoJSON
+                                data={geoData}
+                                style={styleForFeature}
+                                onEachFeature={onEachFeature}
+                            />
+                        )}
+                    </MapContainer>
+                </ShowInFullScreen>
+            </div>
+        </div>
+    );
+}
+
+export default SingleIndicator;
