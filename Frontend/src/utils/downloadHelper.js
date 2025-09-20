@@ -17,33 +17,33 @@ export const ExportAsExcelHtml = (rows, header, fileName) => {
     const safeFileName = fileName || 'exported-data';
     const finalFileName = `${safeFileName}_${formatDateTime()}.xls`;
 
+    // Extract column headers dynamically from the first row
+    const headers = Object.keys(rows[0]);
+
+    // Capitalize the first letter of each header
+    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+    const formattedHeaders = headers.map(capitalize);
+
     // Create HTML table
     const tableStyle = 'border-collapse: collapse; width: 100%; margin-top: 10px;';
     const thStyle = 'border: 1px solid #ddd; padding: 2px; background-color: #f2f2f2; text-align: left;';
     const tdStyle = 'border: 1px solid #ddd; padding: 2px;';
 
-    let tableHtml = `
-        <table style="${tableStyle}">
-            <tr>
-                <th style="${thStyle}">Province</th>
-                <th style="${thStyle}">Population</th>
-                <th style="${thStyle}">Literacy (%)</th>
-                <th style="${thStyle}">GDP (Billion $)</th>
-            </tr>
-    `;
+    let tableHtml = `<table style="${tableStyle}"><tr>`;
+    formattedHeaders.forEach(header => {
+        tableHtml += `<th style="${thStyle}">${header}</th>`;
+    });
+    tableHtml += `</tr>`;
 
     rows.forEach(row => {
-        tableHtml += `
-            <tr>
-                <td style="${tdStyle}">${row.province}</td>
-                <td style="${tdStyle}">${row.population.toLocaleString()}</td>
-                <td style="${tdStyle}">${row.literacy}%</td>
-                <td style="${tdStyle}">${row.gdp}</td>
-            </tr>
-        `;
+        tableHtml += `<tr>`;
+        headers.forEach(key => {
+            tableHtml += `<td style="${tdStyle}">${row[key] !== undefined ? row[key] : ''}</td>`;
+        });
+        tableHtml += `</tr>`;
     });
 
-    tableHtml += '</table>';
+    tableHtml += `</table>`;
 
     // Create full HTML document
     const html = `<!DOCTYPE html>
@@ -54,7 +54,7 @@ export const ExportAsExcelHtml = (rows, header, fileName) => {
                 <x:ExcelWorkbook>
                     <x:ExcelWorksheets>
                         <x:ExcelWorksheet>
-                            <x:Name>Province Data</x:Name>
+                            <x:Name>Exported Data</x:Name>
                             <x:WorksheetOptions>
                                 <x:DisplayGridlines/>
                             </x:WorksheetOptions>

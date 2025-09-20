@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, GeoJSON, TileLayer } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 import ShowInFullScreen from '../shared/ShowInFullScreen';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
+import { ExportAsExcelHtml } from '../../utils/downloadHelper';
+import 'leaflet/dist/leaflet.css';
 const CHORO_DARK = '#08306b'; // dark blue
 const CHORO_LIGHT = '#deebf7'; // light blue
 
@@ -113,8 +115,8 @@ function SingleIndicator() {
     return (
         <div className="flex h-full w-full min-h-0">
             {/* Sidebar for indicators */}
-            <div className="w-full md:w-2/7 flex-none min-h-0 flex flex-col gap-6 overflow-y-auto">
-                <div className="w-full bg-white px-6 flex flex-col gap-4">
+            <div className="w-full md:w-2/7 flex-none min-h-0 flex flex-col  overflow-y-auto">
+                <div className="w-full bg-white px-6 flex flex-col mb-15 ">
                     <div className="w-full bg-white  flex flex-col mt-4">
                         <h2 className="text-2xl font-bold text-blue-700">Please select the indicator</h2>
                         <p className="text-gray-500 text-base mt-1">
@@ -136,6 +138,23 @@ function SingleIndicator() {
                         <option>2021</option>
                         <option>2022</option>
                     </select>
+                    <h3 className="text-lg font-bold text-blue-700 mb-2">Province</h3>
+                    <select
+                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    >
+                        <option>Kabul</option>
+                        <option>Herat</option>
+                        <option>Badakhshan</option>
+                    </select>
+                    <h3 className="text-lg font-bold text-blue-700 mb-2">District</h3>
+                    <select
+                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    >
+                        <option>Musayee</option>
+                        <option>Paghman</option>
+                        <option>DehSabz</option>
+                    </select>
+
                     <label className="text-blue-700 font-semibold ">Value</label>
                     <div className="w-full h-1 rounded bg-gradient-to-r from-blue-500 to-orange-400" />
                     <label className="text-blue-700 font-semibold mb-2">Definition</label>
@@ -147,7 +166,8 @@ function SingleIndicator() {
             </div>
 
             {/* Map */}
-            <div className="md:w-5/7 flex-1 min-h-0 h-full">
+            <div className="md:w-3/7 flex-1 min-h-0 h-full">
+
                 <ShowInFullScreen
                     modalClassName="w-full h-full max-w-none"
                     previewClassName="relative w-full h-full"
@@ -155,7 +175,7 @@ function SingleIndicator() {
                 >
                     <MapContainer
                         key={`single-indicator-map-${geoData ? geoData.features.length : 0}`}
-                        center={[33.9391, 67.7100]} zoom={6} className="w-full h-full" style={{ width: "100%", height: "100%" }}>
+                        center={[33.9391, 67.7100]} zoom={5} className="w-full h-full" style={{ width: "100%", height: "100%" }}>
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
                             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -168,6 +188,94 @@ function SingleIndicator() {
                             />
                         )}
                     </MapContainer>
+                </ShowInFullScreen>
+            </div>
+            <div className="w-full md:w-2/7 flex-none min-h-0 flex flex-col overflow-y-auto px-6 mb-10">
+                <h2 className="text-2xl font-bold mb-3 text-blue-700">Selected Indicator Charts</h2>
+                <ShowInFullScreen
+                    title={"Province Indicators"}
+                    subtitle={"Bar chart of population density, literacy rate, and employment rate by province."}
+                    onExcelDownload={() => {
+                        const barChartData = [
+                            { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
+                            { province: 'Herat', density: 800, literacy: 78, employment: 65 },
+                            { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
+                            { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
+                            { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
+                            { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
+                            { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
+                            { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                        ];
+
+                        // Transform the data to match the Excel format
+                        const excelData = barChartData.map(item => ({
+                            province: item.province,
+                            density: item.density,
+                            literacy: `${item.literacy}%`,
+                            employment: `${item.employment}%`
+                        }));
+
+                        // Call the helper function
+                        ExportAsExcelHtml(excelData, "Province Indicators Report", "province-indicators");
+                    }}
+                >
+                    <ResponsiveContainer width="100%" height={240}>
+                        <BarChart
+                            data={[
+                                { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
+                                { province: 'Herat', density: 800, literacy: 78, employment: 65 },
+                                { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
+                                { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
+                                { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
+                                { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
+                                { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
+                                { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                            ]}
+                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                        >
+                            <XAxis dataKey="province" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="density" fill="#2563eb" name="Density" />
+                            <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
+                            <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ShowInFullScreen>
+
+                {/* Pie Chart */}
+
+                <ShowInFullScreen title={"Access to Basic Services"} subtitle={"Pie chart of access to water, electricity, internet, healthcare, and education."}
+                    onExcelDownload={() => console.log("Download Excel")}
+                >
+                    <ResponsiveContainer width="100%" height={240}>
+                        <PieChart>
+                            <Pie
+                                data={[
+                                    { name: 'Water', value: 400 },
+                                    { name: 'Electricity', value: 300 },
+                                    { name: 'Internet', value: 250 },
+                                    { name: 'Healthcare', value: 200 },
+                                    { name: 'Education', value: 180 }
+                                ]}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={70}
+                                label
+                            >
+                                <Cell fill="#3b82f6" />
+                                <Cell fill="#fbbf24" />
+                                <Cell fill="#22c55e" />
+                                <Cell fill="#a21caf" />
+                                <Cell fill="#ef4444" />
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
                 </ShowInFullScreen>
             </div>
         </div>

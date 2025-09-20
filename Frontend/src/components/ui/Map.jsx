@@ -5,6 +5,8 @@ import 'leaflet/dist/leaflet.css';
 import ShowInFullScreen from '../shared/ShowInFullScreen';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
 
+import { ExportAsExcelHtml } from '../../utils/downloadHelper';
+
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -177,16 +179,16 @@ export default function Map() {
         <div className="flex flex-col md:flex-row h-screen min-h-0 w-full">
             <div className="relative min-h-0 h-full w-full md:basis-2/4 md:flex-1 overflow-hidden">
                 <ShowInFullScreen
-                    modalClassName="w-full h-full max-w-none"
+                    modalClassName="w-full h-full"
                     previewClassName="relative w-full h-full"
-                    containerClassName="w-full h-full p-0 m-0"
+                    containerClassName="w-full h-full flex justify-center items-center"
                 >
                     <MapContainer
                         center={[33.9391, 67.7100]}
                         zoom={zoom}
-                        className="w-full h-full min-h-0"
+                        className="w-full h-full"
                         whenCreated={m => { mapRef.current = m; }}
-                        style={{ width: "100%", height: "100%" }}
+                        style={{ width: "100%", height: "90%" }}
                     >
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
@@ -202,114 +204,130 @@ export default function Map() {
                 <h2 className="text-2xl font-bold mb-6 text-blue-700">Charts & Indicators</h2>
 
                 {/* Bar Chart */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-                    <ShowInFullScreen>
-                        <div className="mb-2">
-                            <h3 className="text-lg font-semibold text-blue-700">Population Density by Province</h3>
-                            <p className="text-xs text-gray-500">Shows population density, literacy, and employment rates for major provinces.</p>
-                        </div>
-                        <div id="bar-chart">
-                            <ResponsiveContainer width="100%" height={240}>
-                                <BarChart
-                                    data={[
-                                        { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
-                                        { province: 'Herat', density: 800, literacy: 78, employment: 65 },
-                                        { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
-                                        { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
-                                        { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
-                                        { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
-                                        { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
-                                        { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
-                                    ]}
-                                    margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
-                                >
-                                    <XAxis dataKey="province" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="density" fill="#2563eb" name="Density" />
-                                    <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
-                                    <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </ShowInFullScreen>
-                </div>
+                <ShowInFullScreen
+                    title={"Province Indicators"}
+                    subtitle={"Bar chart of population density, literacy rate, and employment rate by province."}
+                    showInMapSelected={true}
+                    onExcelDownload={() => {
+                        const barChartData = [
+                            { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
+                            { province: 'Herat', density: 800, literacy: 78, employment: 65 },
+                            { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
+                            { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
+                            { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
+                            { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
+                            { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
+                            { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                        ];
+
+                        // Transform the data to match the Excel format
+                        const excelData = barChartData.map(item => ({
+                            province: item.province,
+                            density: item.density,
+                            literacy: `${item.literacy}%`,
+                            employment: `${item.employment}%`
+                        }));
+
+                        // Call the helper function
+                        ExportAsExcelHtml(excelData, "Province Indicators Report", "province-indicators");
+                    }}
+                    onShowInMap={() => { alert("This chart data is already represented on the map above.") }}
+                >
+                    <ResponsiveContainer width="100%" height={240}>
+                        <BarChart
+                            data={[
+                                { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
+                                { province: 'Herat', density: 800, literacy: 78, employment: 65 },
+                                { province: 'Balkh', density: 600, literacy: 75, employment: 60 },
+                                { province: 'Kandahar', density: 400, literacy: 68, employment: 55 },
+                                { province: 'Nangarhar', density: 350, literacy: 65, employment: 52 },
+                                { province: 'Kunduz', density: 320, literacy: 62, employment: 50 },
+                                { province: 'Parwan', density: 310, literacy: 70, employment: 58 },
+                                { province: 'Ghazni', density: 300, literacy: 60, employment: 48 }
+                            ]}
+                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                        >
+                            <XAxis dataKey="province" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="density" fill="#2563eb" name="Density" />
+                            <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
+                            <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ShowInFullScreen>
 
                 {/* Pie Chart */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-                    <ShowInFullScreen>
-                        <div className="mb-2">
-                            <h3 className="text-lg font-semibold text-blue-700">Access to Basic Services</h3>
-                            <p className="text-xs text-gray-500">Pie chart of access to water, electricity, internet, healthcare, and education.</p>
-                        </div>
-                        <ResponsiveContainer width="100%" height={240}>
-                            <PieChart>
-                                <Pie
-                                    data={[
-                                        { name: 'Water', value: 400 },
-                                        { name: 'Electricity', value: 300 },
-                                        { name: 'Internet', value: 250 },
-                                        { name: 'Healthcare', value: 200 },
-                                        { name: 'Education', value: 180 }
-                                    ]}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={70}
-                                    label
-                                >
-                                    <Cell fill="#3b82f6" />
-                                    <Cell fill="#fbbf24" />
-                                    <Cell fill="#22c55e" />
-                                    <Cell fill="#a21caf" />
-                                    <Cell fill="#ef4444" />
-                                </Pie>
-                                <Tooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </ShowInFullScreen>
-                </div>
+
+                <ShowInFullScreen title={"Access to Basic Services"} subtitle={"Pie chart of access to water, electricity, internet, healthcare, and education."}
+                    onExcelDownload={() => console.log("Download Excel")}
+                    onShowInMap={() => { alert("This chart data is already represented on the map above.") }}
+                >
+                    <ResponsiveContainer width="100%" height={240}>
+                        <PieChart>
+                            <Pie
+                                data={[
+                                    { name: 'Water', value: 400 },
+                                    { name: 'Electricity', value: 300 },
+                                    { name: 'Internet', value: 250 },
+                                    { name: 'Healthcare', value: 200 },
+                                    { name: 'Education', value: 180 }
+                                ]}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={70}
+                                label
+                            >
+                                <Cell fill="#3b82f6" />
+                                <Cell fill="#fbbf24" />
+                                <Cell fill="#22c55e" />
+                                <Cell fill="#a21caf" />
+                                <Cell fill="#ef4444" />
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </ShowInFullScreen>
+                {/* </div> */}
 
                 {/* Line Chart */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-                    <ShowInFullScreen>
-                        <div className="mb-2">
-                            <h3 className="text-lg font-semibold text-blue-700">Population & GDP Growth</h3>
-                            <p className="text-xs text-gray-500">Line chart showing population and GDP growth over years.</p>
-                        </div>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <LineChart
-                                data={[
-                                    { year: 2020, population: 2.1, gdp: 1.2 },
-                                    { year: 2021, population: 2.5, gdp: 1.4 },
-                                    { year: 2022, population: 3.0, gdp: 1.7 },
-                                    { year: 2023, population: 2.7, gdp: 1.9 },
-                                    { year: 2024, population: 3.2, gdp: 2.2 },
-                                    { year: 2025, population: 3.5, gdp: 2.5 }
-                                ]}
-                                margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
-                            >
-                                <XAxis dataKey="year" />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                <Line type="monotone" dataKey="population" stroke="#22c55e" strokeWidth={2} name="Population Growth" />
-                                <Line type="monotone" dataKey="gdp" stroke="#6366f1" strokeWidth={2} name="GDP Growth" />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </ShowInFullScreen>
-                </div>
+
+                <ShowInFullScreen title={"Population & GDP Growth Over Years"} subtitle={"Line chart showing population and GDP growth over years."}
+                    onExcelDownload={() => console.log("Download Excel")}
+                    onShowInMap={() => { alert("This chart data is already represented on the map above.") }}
+                >
+                    <ResponsiveContainer width="100%" height={200}>
+                        <LineChart
+                            data={[
+                                { year: 2020, population: 2.1, gdp: 1.2 },
+                                { year: 2021, population: 2.5, gdp: 1.4 },
+                                { year: 2022, population: 3.0, gdp: 1.7 },
+                                { year: 2023, population: 2.7, gdp: 1.9 },
+                                { year: 2024, population: 3.2, gdp: 2.2 },
+                                { year: 2025, population: 3.5, gdp: 2.5 }
+                            ]}
+                            margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+                        >
+                            <XAxis dataKey="year" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="population" stroke="#22c55e" strokeWidth={2} name="Population Growth" />
+                            <Line type="monotone" dataKey="gdp" stroke="#6366f1" strokeWidth={2} name="GDP Growth" />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </ShowInFullScreen>
 
                 {/* Composed Chart */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-                    <ShowInFullScreen>
-                        <div className="mb-2">
-                            <h3 className="text-lg font-semibold text-blue-700">Education, Health & GDP by Province</h3>
-                            <p className="text-xs text-gray-500">Composed chart showing education, health scores, and GDP for selected provinces.</p>
-                        </div>
+                    <ShowInFullScreen title={"Education, Health & GDP by Province"} subtitle={"Composed chart showing education, health scores, and GDP for selected provinces."}
+                        onShowInMap={() => { alert("This chart data is already represented on the map above.") }}
+                        onExcelDownload={() => console.log("Download Excel")}
+                    >
                         <ResponsiveContainer width="100%" height={240}>
                             <ComposedChart
                                 data={[
@@ -334,6 +352,6 @@ export default function Map() {
                     </ShowInFullScreen>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

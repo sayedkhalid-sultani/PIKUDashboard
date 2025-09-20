@@ -64,7 +64,7 @@ export default function AppRouter() {
             </Suspense>
           }
         >
-          <Route index element={<Navigate to="CountryProfile" replace />} />
+          <Route index element={<Navigate to="CountryDashboard" replace />} />
           <Route
             path="CountryProfile"
             element={

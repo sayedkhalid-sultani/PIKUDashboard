@@ -1,6 +1,6 @@
 import React from "react";
 import DataTable from "react-data-table-component";
-import { ExportAsExcelHtml } from '../../utils/downloaHelper';
+import { ExportAsExcelHtml } from '../../utils/downloadHelper';
 
 const dummyData = [
     { id: 1, province: "Kabul", population: 5000000, literacy: 85, gdp: 2.1 },

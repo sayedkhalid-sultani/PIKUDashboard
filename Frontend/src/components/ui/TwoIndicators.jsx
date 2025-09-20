@@ -100,7 +100,7 @@ const provinceStyleBase = (fillColor) => ({
     fillOpacity: 0.85
 });
 
-function TwoIndicators() {
+export default function TwoIndicators() {
     const [geoData, setGeoData] = useState(null);
     const [loading, setLoading] = useState(true);
     // indicator1 -> choropleth, indicator2 -> bubble size
@@ -169,7 +169,7 @@ function TwoIndicators() {
         return { colorMap: map, bubbles: bubbleArr };
     }, [geoData, values]);
 
-    if (loading) return <div className="flex items-center justify-center h-screen text-gray-600">Loading map...</div>;
+    if (loading) return <div className="flex items-center justify-center h-full text-gray-600">Loading map...</div>;
 
     const randomText = [
         "Population is growing rapidly.",
@@ -243,57 +243,53 @@ function TwoIndicators() {
         });
     };
 
-    // Updated MapContainer logic
     return (
-        <div className="flex h-full w-full min-h-0">
-            <div className="w-full md:w-2/7 flex-none min-h-0 flex flex-col gap-6 overflow-y-auto ">
-                {/* Sidebar Title and Subtitle as card */}
-                <div className="w-full bg-white  px-6 flex flex-col mt-4">
-                    <h2 className="text-2xl font-bold text-blue-700">Please select the indicators</h2>
-                    <p className="text-gray-500 text-base mt-1">
+        <div className="flex h-full w-full overflow-hidden">
+            {/* Scrollable sidebar */}
+            <div className="w-full md:w-2/7 flex flex-col gap-4 overflow-y-auto p-4 mb-10 bg-gray-50">
+                <div className="bg-white rounded-lg shadow-sm p-4">
+                    <h2 className="text-xl font-bold text-blue-700 mb-2">Please select the indicators</h2>
+                    <p className="text-gray-500 text-sm">
                         Choose two indicators from the dropdowns below to visualize and compare data for Afghanistan provinces.
                     </p>
                 </div>
-                {/* Indicator 1 Card */}
-                <div className="w-full bg-white  px-6 flex flex-col gap-4">
+
+                <div className="bg-white rounded-lg shadow-sm p-4">
                     <h3 className="text-lg font-bold text-blue-700 mb-2">Indicator 1</h3>
-                    <select
-                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                    >
+                    <select className="w-full border border-blue-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
                         <option>Population</option>
                         <option>Male Literacy Rate</option>
                         <option>GDP</option>
                     </select>
-                    <label className="text-blue-700 font-semibold ">Value</label>
-                    <div className="w-full h-1  rounded bg-gradient-to-r from-blue-500 to-orange-400" />
-                    <label className="text-blue-700 font-semibold mb-2">Definition</label>
+                    <label className="text-blue-700 font-semibold block mb-1">Value</label>
+                    <div className="w-full h-1 rounded bg-gradient-to-r from-blue-500 to-orange-400 mb-2" />
+                    <label className="text-blue-700 font-semibold block mb-1">Definition</label>
                     <textarea
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[80px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                         defaultValue="You can add your analysis or comments here about the selected indicators and provinces."
                     />
                 </div>
-                {/* Indicator 2 Card */}
-                <div className="w-full bg-white  p-6 flex flex-col gap-4">
+
+                <div className="bg-white rounded-lg shadow-sm p-4">
                     <h3 className="text-lg font-bold text-orange-500 mb-2">Indicator 2</h3>
-                    <select
-                        className="w-full border border-orange-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
-                    >
+                    <select className="w-full border border-orange-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
                         <option>Population</option>
                         <option>Male Literacy Rate</option>
                         <option>GDP</option>
                     </select>
-                    <label className="text-orange-500 font-semibold">Value</label>
-                    <div className="w-full h-1  rounded bg-gradient-to-r from-orange-400 to-blue-500" />
-                    <label className="text-orange-500 font-semibold mb-2">Definition</label>
+                    <label className="text-orange-500 font-semibold block mb-1">Value</label>
+                    <div className="w-full h-1 rounded bg-gradient-to-r from-orange-400 to-blue-500 mb-2" />
+                    <label className="text-orange-500 font-semibold block mb-1">Definition</label>
                     <textarea
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[80px] text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                         defaultValue="You can add your analysis or comments here about the selected indicators and provinces."
                     />
                 </div>
             </div>
 
-            <div className="md:w-5/7 flex-1 min-h-0 h-full">
-                <div className="w-full h-full min-h-0 rounded-lg shadow">
+            {/* Map container - fixed, no scrolling */}
+            <div className="md:w-5/7 flex-1 overflow-hidden">
+                <div className="w-full h-full">
                     <ShowInFullScreen
                         modalClassName="w-full h-full max-w-none"
                         previewClassName="relative w-full h-full"
@@ -301,7 +297,7 @@ function TwoIndicators() {
                     >
                         <MapContainer
                             key={`country-map-${geoData ? geoData.features.length : 0}`}
-                            center={[33.9391, 67.7100]} zoom={6} className="w-full h-full" style={{ width: "100%", height: "100%" }}>
+                            center={[33.9391, 67.7100]} zoom={6} style={{ width: "100%", height: "90%" }}>
                             <TileLayer
                                 attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
                                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -334,5 +330,3 @@ function TwoIndicators() {
         </div>
     );
 }
-
-export default TwoIndicators;
