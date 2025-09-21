@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import Map from "./map";
-import CountryDashboardDataTable from "./CountryDashboardDataTable";
 import TwoIndicators from "./TwoIndicators";
 import SingleIndicator from './SingleIndicator';
 
 const tabs = [
     { name: "Map", key: "map-tab-unique" },
-    { name: "Data", key: "data-tab-unique" },
     { name: "Analyze", key: "analyze-tab-unique" },
 ];
 
@@ -66,7 +64,6 @@ export default function CountryDashboard() {
             {/* Tab Content */}
             <div className="w-full flex-1 overflow-hidden">
                 {activeTab === "map-tab-unique" && <Map />}
-                {activeTab === "data-tab-unique" && <CountryDashboardDataTable />}
                 {activeTab === "analyze-tab-unique" && (
                     <>
                         {/* Sub-tabs for Analyze - Always visible when Analyze tab is active */}

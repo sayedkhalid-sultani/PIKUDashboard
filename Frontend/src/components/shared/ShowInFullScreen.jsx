@@ -75,7 +75,9 @@ function ShowInFullScreen({
                             <h3 className="text-lg font-semibold text-blue-700">{title}</h3>
                             <p className="text-xs text-gray-500">{subtitle}</p>
                         </div>
-                        {children}
+                        <div className='overflow-auto'>
+                            {children}
+                        </div>
                         {/* Expand button */}
                         {!open && (
                             <div className="absolute top-0 right-0 flex gap-2" style={{ zIndex: 2000 }}>
@@ -194,7 +196,7 @@ function ShowInFullScreen({
                                     </button>
                                 </div>
                             </div>
-                            <div className={`${contentClassName}`} ref={contentRef} >
+                            <div className={`${contentClassName} overflow-auto`} ref={contentRef} >
                                 {(title || subtitle) ? <div className="mb-3">
                                     <h3 className="text-lg font-semibold text-blue-700">{title}</h3>
                                     <p className="text-xs text-gray-500">{subtitle}</p>

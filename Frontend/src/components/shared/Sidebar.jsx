@@ -52,7 +52,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             {isOpen && (
               <button
                 onClick={toggleSidebar}
-                className="bg-blue-600 text-white shadow-lg rounded-full p-2 cursor-pointer hover:bg-blue-700 transition-all flex items-center justify-center"
+                className="bg-blue-600 text-white shadow-lg rounded-full p-2 cursor-pointer hover:bg-blue-700 transition-all flex items-center justify-center "
                 title="Collapse Sidebar"
               >
                 <FiChevronLeft className="text-lg" />
@@ -154,7 +154,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         {!isOpen && (
           <button
             onClick={toggleSidebar}
-            className="absolute -right-3 top-5 z-10 bg-blue-600 text-white shadow-lg rounded-full p-2 cursor-pointer hover:bg-blue-700 transition-all flex items-center justify-center"
+            className="absolute -right-3 top-5 z-2000 bg-blue-600 text-white shadow-lg rounded-full p-2 cursor-pointer hover:bg-blue-700 transition-all flex items-center justify-center"
             title="Expand Sidebar"
           >
             <FiChevronRight className="text-lg" />
