@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/Shared/Store";
 import { FiMap, FiUser, FiPieChart, FiSettings, FiLock, FiLogOut, FiGlobe, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { MdAddChart } from "react-icons/md";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
@@ -90,13 +91,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen && <span>Country Profile MUI</span>}
             </NavLink>
 
+
             <NavLink
-              to="/dashboard/Analyze"
+              to="/dashboard/AddChart"
               className={isOpen ? linkClasses : collapsedLinkClasses}
-              title="Analyze"
+              title="Add Indicator"
             >
-              <FiPieChart className="text-lg" />
-              {isOpen && <span>Analyze</span>}
+              <MdAddChart className="text-lg" />
+              {isOpen && <span>Add Chart</span>}
             </NavLink>
 
             {/* Change Password */}

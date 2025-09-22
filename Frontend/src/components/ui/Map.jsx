@@ -4,8 +4,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import ShowInFullScreen from '../shared/ShowInFullScreen';
 import { ResponsiveContainer, BarChart, Bar as RechartsBar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
-import { BarChart as MuiBarChart } from '@mui/x-charts/BarChart'; // For MUI X Charts
-import { Bar as ChartJSBar } from 'react-chartjs-2'; // For Chart.js
+import { PiMicrosoftExcelLogoBold } from "react-icons/pi";
+import { FiX } from 'react-icons/fi';
+
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -113,7 +114,7 @@ const provinceCenters = {
 const CirclesLayer = ({ circles }) => {
     const map = useMap();
 
-    // bring circles to front after render for visibility
+    // Bring circles to the front after render for visibility
     useEffect(() => {
         const t = setTimeout(() => {
             Object.values(map._layers).forEach(layer => {
@@ -122,7 +123,6 @@ const CirclesLayer = ({ circles }) => {
         }, 120);
         return () => clearTimeout(t);
     }, [map, circles]);
-
     return (
         <>
             {circles.map((c) => (
@@ -136,22 +136,42 @@ const CirclesLayer = ({ circles }) => {
                         fillOpacity: 0.75,
                         weight: 2
                     }}
-                    // bind tooltip once and handle hover on circle
-                    whenCreated={(layer) => {
-                        try { layer.bindTooltip(c.province, { direction: 'top', sticky: true }); } catch { console.error("Failed to bind tooltip") }
-                    }}
+                    // Bind tooltip and handle hover events
                     eventHandlers={{
                         mouseover: (e) => {
                             const layer = e.target;
-                            layer.setStyle({ color: HIGHLIGHT_COLOR, fillColor: HIGHLIGHT_COLOR, fillOpacity: 0.95, weight: 3 });
-                            try { layer.bringToFront(); layer.openTooltip(); } catch {
+                            layer.setStyle({
+                                color: HIGHLIGHT_COLOR,
+                                fillColor: HIGHLIGHT_COLOR,
+                                fillOpacity: 0.95,
+                                weight: 3
+                            });
+                            try {
+                                layer.bringToFront();
+                                layer.bindTooltip(
+                                    `<div>
+                                        <strong>${c.province}</strong><br />
+                                        Growth: ${(Math.random().toFixed(2) * 100).toFixed(2)}%<br />
+                                        % of total: ${(Math.random().toFixed(2) * 100).toFixed(2)}%<br />
+                                        % change since last period: ${(Math.random().toFixed(2) * 100).toFixed(2)}%<br />
+                                    </div>`,
+                                    { direction: 'top', sticky: true }
+                                ).openTooltip();
+                            } catch {
                                 console.error("Failed to open tooltip");
                             }
                         },
                         mouseout: (e) => {
                             const layer = e.target;
-                            layer.setStyle({ color: CIRCLE_COLOR, fillColor: CIRCLE_COLOR, fillOpacity: 0.75, weight: 2 });
-                            try { layer.closeTooltip(); } catch {
+                            layer.setStyle({
+                                color: CIRCLE_COLOR,
+                                fillColor: CIRCLE_COLOR,
+                                fillOpacity: 0.75,
+                                weight: 2
+                            });
+                            try {
+                                layer.closeTooltip();
+                            } catch {
                                 console.error("Failed to close tooltip");
                             }
                         }
@@ -253,29 +273,47 @@ export default function Map() {
     return (
         <div className="flex flex-col md:flex-row h-screen min-h-0 w-full">
             <div className="relative min-h-0 h-full w-full md:basis-2/4 md:flex-1 overflow-hidden">
-                {/* Chart Data Display Banner */}
-                {currentChartData && (
-                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-white bg-opacity-90 border border-blue-200 rounded-lg shadow-lg p-3 max-w-md">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-blue-700">{currentChartData?.title}</h3>
-                            <button
-                                onClick={() => setCurrentChartData(null)}
-                                className="text-gray-500 hover:text-gray-700 ml-2"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-1">
-                            {currentChartData?.subtitle}
-                        </p>
-                    </div>
-                )}
-
                 <ShowInFullScreen
                     modalClassName="w-full h-full"
                     previewClassName="relative w-full h-full"
-                    containerClassName="w-full h-full flex justify-center items-center"
+                    containerClassName="w-full h-full"
+                    contentClassName='w-full h-full flex justify-center items-center'
                 >
+                    {currentChartData && (
+                        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-1000 bg-white bg-opacity-90 border border-blue-200 rounded-lg shadow-lg p-5 max-w-md">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-sm font-bold text-blue-700">{currentChartData?.title}</h3>
+                                <div className="absolute top-0 right-0 flex gap-2" style={{ zIndex: 2000 }}>
+                                    <div className="inline-flex rounded shadow bg-white bg-opacity-80 border border-gray-200 overflow-hidden">
+                                        <button
+                                            className="px-2 py-1 hover:bg-green-50 transition flex items-center justify-center text-green-700"
+                                            onClick={() => {
+                                                const excelData = currentChartData?.data.map(item => ({ ...item }));
+                                                ExportAsExcelHtml(excelData, `${currentChartData?.title}`, "chart-data");
+                                            }}
+                                            title="Export to Excel"
+                                            aria-label="Export chart to Excel"
+                                        >
+                                            <PiMicrosoftExcelLogoBold size={18} />
+                                        </button>
+                                        <button
+                                            className="px-2 py-1 hover:bg-red-50 transition flex items-center justify-center border-l border-gray-200 text-red-700"
+                                            onClick={() => setCurrentChartData(null)}
+                                            title="Close"
+                                            aria-label="Close"
+                                        >
+                                            <FiX size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1">
+                                {currentChartData?.subtitle}
+                            </p>
+                        </div>
+                    )}
+
+
                     <MapContainer
                         center={[33.9391, 67.7100]}
                         zoom={zoom}
@@ -301,9 +339,10 @@ export default function Map() {
                     title={"Province Indicators"}
                     subtitle={"Bar chart of population density, literacy rate, and employment rate by province."}
                     showInMapSelected={currentChartData?.title === "Province Indicators"}
+                    source={"Data Source: Afghanistan Statistical Yearbook 2023"}
+                    lastUpdate={"October 2023"}
                     onExcelDownload={() => {
                         const barChartData = provinceData;
-
                         // Transform the data to match the Excel format
                         const excelData = barChartData.map(item => ({
                             province: item.province,
@@ -321,6 +360,7 @@ export default function Map() {
                         provinceData
                     )}
                 >
+
                     <ResponsiveContainer width={1200} height={300}>
                         <BarChart
                             data={provinceData}
@@ -328,10 +368,10 @@ export default function Map() {
                         >
                             <XAxis
                                 dataKey="province"
-                                angle={45}
+                                angle={90}
                                 textAnchor="start"
                                 interval={0}
-                                height={80}
+                                height={120}
                             />
                             <YAxis />
                             <Tooltip />
@@ -442,7 +482,11 @@ export default function Map() {
                 </ShowInFullScreen> */}
                 {/* Pie Chart */}
 
-                <ShowInFullScreen title={"Access to Basic Services"} subtitle={"Pie chart of access to water, electricity, internet, healthcare, and education."}
+                <ShowInFullScreen
+                    title={"Access to Basic Services"}
+                    subtitle={"Pie chart of access to water, electricity, internet, healthcare, and education."}
+                    source={"Data Source: Afghanistan Statistical Yearbook 2023"}
+                    lastUpdate={"July 2025"}
                     onExcelDownload={() => console.log("Download Excel")}
                     onShowInMap={() => handleShowInMap(
                         "Access to Basic Services",
@@ -488,7 +532,11 @@ export default function Map() {
 
                 {/* Line Chart */}
 
-                <ShowInFullScreen title={"Population & GDP Growth Over Years"} subtitle={"Line chart showing population and GDP growth over years."}
+                <ShowInFullScreen
+                    title={"Population & GDP Growth Over Years"}
+                    subtitle={"Line chart showing population and GDP growth over years."}
+                    source={"Data Source: World Bank & UN Data 2023"}
+                    lastUpdate={"Jan 2020"}
                     onExcelDownload={() => console.log("Download Excel")}
                     onShowInMap={() => handleShowInMap(
                         "Population & GDP Growth",
@@ -528,7 +576,11 @@ export default function Map() {
 
                 {/* Composed Chart */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-                    <ShowInFullScreen title={"Education, Health & GDP by Province"} subtitle={"Composed chart showing education, health scores, and GDP for selected provinces."}
+                    <ShowInFullScreen
+                        title={"Education, Health & GDP by Province"}
+                        subtitle={"Composed chart showing education, health scores, and GDP for selected provinces."}
+                        lastUpdate={"Jan 2023"}
+                        source={"Data Source: Afghanistan Statistical Yearbook 2023 & World Bank 2023"}
                         onShowInMap={() => handleShowInMap(
                             "Education, Health & GDP",
                             "Composed chart showing education, health scores, and GDP for selected provinces.",

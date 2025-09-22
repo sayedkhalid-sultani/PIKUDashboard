@@ -4,6 +4,8 @@ import ShowInFullScreen from '../shared/ShowInFullScreen';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, LineChart, Line, ComposedChart, Cell } from 'recharts';
 import { ExportAsExcelHtml } from '../../utils/downloadHelper';
 import 'leaflet/dist/leaflet.css';
+import Select from 'react-select'; // Import react-select
+
 const CHORO_DARK = '#08306b'; // dark blue
 const CHORO_LIGHT = '#deebf7'; // light blue
 
@@ -44,10 +46,33 @@ const randomText = [
 
 const getRandomText = () => randomText[Math.floor(Math.random() * randomText.length)];
 
+const provinceOptions = [
+    { value: 'Kabul', label: 'Kabul' },
+    { value: 'Herat', label: 'Herat' },
+    { value: 'Badakhshan', label: 'Badakhshan' },
+    { value: 'Kandahar', label: 'Kandahar' },
+    { value: 'Nangarhar', label: 'Nangarhar' },
+];
+
+const districtOptions = [
+    { value: 'Musayee', label: 'Musayee' },
+    { value: 'Paghman', label: 'Paghman' },
+    { value: 'DehSabz', label: 'DehSabz' },
+];
+
+const indicatorOptions = [
+    { value: 'population', label: 'Population' },
+    { value: 'male_literacy_rate', label: 'Male Literacy Rate' },
+    { value: 'gdp', label: 'GDP' },
+];
+
 function SingleIndicator() {
     const [geoData, setGeoData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [values, setValues] = useState({}); // { province: value }
+    const [selectedIndicator, setSelectedIndicator] = useState(null);
+    const [selectedProvince, setSelectedProvince] = useState(null);
+    const [selectedDistrict, setSelectedDistrict] = useState(null);
 
     useEffect(() => {
         let mounted = true;
@@ -114,7 +139,7 @@ function SingleIndicator() {
 
     return (
         <div className="flex h-full w-full min-h-0">
-            {/* Sidebar for indicators */}
+
             <div className="w-full md:w-2/7 flex-none min-h-0 flex flex-col  overflow-y-auto">
                 <div className="w-full bg-white px-6 flex flex-col mb-15 ">
                     <div className="w-full bg-white  flex flex-col mt-4">
@@ -123,37 +148,45 @@ function SingleIndicator() {
                             Choose the indicator from the dropdowns below to visualize and compare data for Afghanistan provinces.
                         </p>
                     </div>
-                    <select
-                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                    >
-                        <option>Population</option>
-                        <option>Male Literacy Rate</option>
-                        <option>GDP</option>
-                    </select>
+                    <Select
+                        options={indicatorOptions}
+                        value={selectedIndicator}
+                        onChange={setSelectedIndicator}
+                        placeholder="Search and select an indicator"
+                        isSearchable
+                        className="mb-4"
+                    />
                     <h3 className="text-lg font-bold text-blue-700 mb-2">Year</h3>
-                    <select
-                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                    >
-                        <option>2020</option>
-                        <option>2021</option>
-                        <option>2022</option>
-                    </select>
+                    <Select
+                        options={[
+                            { value: '2020', label: '2020' },
+                            { value: '2021', label: '2021' },
+                            { value: '2022', label: '2022' }
+                        ]}
+                        value={null}
+                        onChange={() => { }}
+                        placeholder="Select year"
+                        isSearchable={false}
+                        className="mb-4"
+                    />
                     <h3 className="text-lg font-bold text-blue-700 mb-2">Province</h3>
-                    <select
-                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                    >
-                        <option>Kabul</option>
-                        <option>Herat</option>
-                        <option>Badakhshan</option>
-                    </select>
+                    <Select
+                        options={provinceOptions}
+                        value={selectedProvince}
+                        onChange={setSelectedProvince}
+                        placeholder="Search and select a province"
+                        isSearchable
+                        className="mb-4"
+                    />
                     <h3 className="text-lg font-bold text-blue-700 mb-2">District</h3>
-                    <select
-                        className="w-full border border-blue-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                    >
-                        <option>Musayee</option>
-                        <option>Paghman</option>
-                        <option>DehSabz</option>
-                    </select>
+                    <Select
+                        options={districtOptions}
+                        value={selectedDistrict}
+                        onChange={setSelectedDistrict}
+                        placeholder="Search and select a district"
+                        isSearchable
+                        className="mb-4"
+                    />
 
                     <label className="text-blue-700 font-semibold ">Value</label>
                     <div className="w-full h-1 rounded bg-gradient-to-r from-blue-500 to-orange-400" />
@@ -169,13 +202,21 @@ function SingleIndicator() {
             <div className="md:w-3/7 flex-1 min-h-0 h-full">
 
                 <ShowInFullScreen
-                    modalClassName="w-full h-full max-w-none"
+                    modalClassName="w-full h-full"
                     previewClassName="relative w-full h-full"
-                    containerClassName="w-full h-full p-0 m-0"
+                    containerClassName="w-full h-full"
+                    contentClassName='w-full h-full flex justify-center items-center'
                 >
                     <MapContainer
                         key={`single-indicator-map-${geoData ? geoData.features.length : 0}`}
-                        center={[33.9391, 67.7100]} zoom={5} className="w-full h-full" style={{ width: "100%", height: "100%" }}>
+                        center={[33.9391, 67.7100]}
+                        zoom={5}
+                        className="w-full h-full"
+                        style={{ width: "100%", height: "90%" }}
+                        zoomSnap={0.3} // Adjust zoom snapping to smaller increments
+                        zoomDelta={0.3} // Reduce zoom step size for smoother zooming
+                        scrollWheelZoom={true} // Enable scroll wheel zoom
+                    >
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
                             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -195,6 +236,8 @@ function SingleIndicator() {
                 <ShowInFullScreen
                     title={"Province Indicators"}
                     subtitle={"Bar chart of population density, literacy rate, and employment rate by province."}
+                    source={"Data Source: Afghanistan Statistical Yearbook 2023"}
+                    lastUpdate={"Jan 2023"}
                     onExcelDownload={() => {
                         const barChartData = [
                             { province: 'Kabul', density: 1200, literacy: 85, employment: 70 },
@@ -246,7 +289,11 @@ function SingleIndicator() {
 
                 {/* Pie Chart */}
 
-                <ShowInFullScreen title={"Access to Basic Services"} subtitle={"Pie chart of access to water, electricity, internet, healthcare, and education."}
+                <ShowInFullScreen
+                    title={"Access to Basic Services"}
+                    subtitle={"Pie chart of access to water, electricity, internet, healthcare, and education."}
+                    source={"Data Source: Afghanistan Statistical Yearbook 2023"}
+                    lastUpdate={"Jan 2023"}
                     onExcelDownload={() => console.log("Download Excel")}
                 >
                     <ResponsiveContainer width="100%" height={240}>

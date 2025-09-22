@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { MapContainer, GeoJSON, TileLayer, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import ShowInFullScreen from '../shared/ShowInFullScreen';
+import Select from 'react-select'; // Import react-select
 
 const provinceCenters = {
     "Badakhshan": [36.7348, 70.8120],
@@ -40,8 +41,8 @@ const provinceCenters = {
     "Zabul": [32.4000, 67.0000]
 };
 
-// single circle color
-const CIRCLE_COLOR = '#2563eb'; // base color for circles
+// Change the base color for circles
+const CIRCLE_COLOR = '#f97316'; // Orange base color for circles
 
 // helper: convert hex <-> rgb (already present in file, kept here for completeness)
 const hexToRgb = (hex) => {
@@ -106,6 +107,16 @@ export default function TwoIndicators() {
     // indicator1 -> choropleth, indicator2 -> bubble size
     const [values, setValues] = useState({}); // { province: {i1, i2} }
 
+    const [indicator1, setIndicator1] = useState(null);
+    const [indicator2, setIndicator2] = useState(null);
+
+    // Options for the dropdowns
+    const indicatorOptions = [
+        { value: 'population', label: 'Population' },
+        { value: 'male_literacy_rate', label: 'Male Literacy Rate' },
+        { value: 'gdp', label: 'GDP' },
+    ];
+
     useEffect(() => {
         let mounted = true;
         fetch('/public/afghanistan-provinces.geojson')
@@ -148,7 +159,7 @@ export default function TwoIndicators() {
             const t = (val - min) / Math.max(1, (max - min)); // 0..1
             map[pname] = interpHex(CHORO_DARK, CHORO_LIGHT, t);
 
-            // circle: fixed radius but randomized shade based on CIRCLE_COLOR
+            // circle: fixed radius but randomized shade based on the new CIRCLE_COLOR
             const center = provinceCenters[pname] || (() => {
                 const coords = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
                 let sumLat = 0, sumLng = 0, cnt = 0;
@@ -157,8 +168,7 @@ export default function TwoIndicators() {
             })();
             const i2 = values[pname] ? values[pname].i2 : 0;
 
-            // randomize shade around base color
-            // choose t in [-0.45, 0.45] to keep shades close to base
+            // randomize shade around the new base color
             const shadeT = rand(-0.45, 0.45);
             const circleShade = shadeAround(CIRCLE_COLOR, shadeT);
 
@@ -192,7 +202,7 @@ export default function TwoIndicators() {
         return provinceStyleBase(fill);
     };
 
-    // Updated Circle hover logic with random text
+    // Updated Circle hover logic with new color
     const circleEventHandlers = (b) => ({
         mouseover: (e) => {
             const layer = e.target;
@@ -256,11 +266,13 @@ export default function TwoIndicators() {
 
                 <div className="bg-white rounded-lg shadow-sm p-4">
                     <h3 className="text-lg font-bold text-blue-700 mb-2">Indicator 1</h3>
-                    <select className="w-full border border-blue-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <option>Population</option>
-                        <option>Male Literacy Rate</option>
-                        <option>GDP</option>
-                    </select>
+                    <Select
+                        options={indicatorOptions}
+                        value={indicator1}
+                        onChange={(selectedOption) => setIndicator1(selectedOption)}
+                        placeholder="Select Indicator 1"
+                        className="mb-4"
+                    />
                     <label className="text-blue-700 font-semibold block mb-1">Value</label>
                     <div className="w-full h-1 rounded bg-gradient-to-r from-blue-500 to-orange-400 mb-2" />
                     <label className="text-blue-700 font-semibold block mb-1">Definition</label>
@@ -272,11 +284,20 @@ export default function TwoIndicators() {
 
                 <div className="bg-white rounded-lg shadow-sm p-4">
                     <h3 className="text-lg font-bold text-orange-500 mb-2">Indicator 2</h3>
-                    <select className="w-full border border-orange-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
-                        <option>Population</option>
-                        <option>Male Literacy Rate</option>
-                        <option>GDP</option>
-                    </select>
+                    <Select
+                        options={indicatorOptions}
+                        value={indicator2}
+                        onChange={(selectedOption) => setIndicator2(selectedOption)}
+                        placeholder="Select Indicator 2"
+                        className="mb-4"
+                        styles={{
+                            control: (base) => ({
+                                ...base,
+                                borderColor: '#f97316', // Orange border
+                                '&:hover': { borderColor: '#ea580c' }, // Darker orange on hover
+                            }),
+                        }}
+                    />
                     <label className="text-orange-500 font-semibold block mb-1">Value</label>
                     <div className="w-full h-1 rounded bg-gradient-to-r from-orange-400 to-blue-500 mb-2" />
                     <label className="text-orange-500 font-semibold block mb-1">Definition</label>
@@ -291,13 +312,18 @@ export default function TwoIndicators() {
             <div className="md:w-5/7 flex-1 overflow-hidden">
                 <div className="w-full h-full">
                     <ShowInFullScreen
-                        modalClassName="w-full h-full max-w-none"
+                        modalClassName="w-full h-full"
                         previewClassName="relative w-full h-full"
-                        containerClassName="w-full h-full p-0 m-0"
+                        containerClassName="w-full h-full"
+                        contentClassName='w-full h-full flex justify-center items-center'
                     >
                         <MapContainer
                             key={`country-map-${geoData ? geoData.features.length : 0}`}
-                            center={[33.9391, 67.7100]} zoom={6} style={{ width: "100%", height: "90%" }}>
+                            center={[33.9391, 67.7100]} zoom={6} style={{ width: "100%", height: "90%" }}
+                            zoomSnap={0.3}
+                            zoomDelta={0.3}
+
+                        >
                             <TileLayer
                                 attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
                                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
