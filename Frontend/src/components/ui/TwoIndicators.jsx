@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { MapContainer, GeoJSON, TileLayer, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import ShowInFullScreen from '../shared/ShowInFullScreen';
-import Select from 'react-select'; // Import react-select
+import Select from 'react-select';
 
 const provinceCenters = {
     "Badakhshan": [36.7348, 70.8120],
@@ -41,29 +41,27 @@ const provinceCenters = {
     "Zabul": [32.4000, 67.0000]
 };
 
-// Change the base color for circles
-const CIRCLE_COLOR = '#f97316'; // Orange base color for circles
+const CIRCLE_COLOR = '#f97316';
+const CHORO_DARK = '#08306b';
+const CHORO_LIGHT = '#deebf7';
+const FIXED_BUBBLE_RADIUS = 12000;
 
-// helper: convert hex <-> rgb (already present in file, kept here for completeness)
 const hexToRgb = (hex) => {
     const v = hex.replace('#', '');
     return [parseInt(v.substring(0, 2), 16), parseInt(v.substring(2, 4), 16), parseInt(v.substring(4, 6), 16)];
 };
+
 const rgbToHex = (r, g, b) => '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
 
-// generate a randomized shade around a base color
-// t in [-1,1]: negative -> darker (toward black), positive -> lighter (toward white)
 const shadeAround = (baseHex, t) => {
     const baseRgb = hexToRgb(baseHex);
     if (t >= 0) {
-        // interpolate toward white
         const R = Math.round(baseRgb[0] + (255 - baseRgb[0]) * t);
         const G = Math.round(baseRgb[1] + (255 - baseRgb[1]) * t);
         const B = Math.round(baseRgb[2] + (255 - baseRgb[2]) * t);
         return rgbToHex(R, G, B);
     } else {
         const tt = Math.abs(t);
-        // interpolate toward black
         const R = Math.round(baseRgb[0] * (1 - tt));
         const G = Math.round(baseRgb[1] * (1 - tt));
         const B = Math.round(baseRgb[2] * (1 - tt));
@@ -71,13 +69,9 @@ const shadeAround = (baseHex, t) => {
     }
 };
 
-// random in range
 const rand = (min, max) => Math.random() * (max - min) + min;
-
-// getRandom: returns a random number between min and max
 const getRandom = (min, max) => Math.random() * (max - min) + min;
 
-// interpolate between two hex colors
 const interpHex = (a, b, t) => {
     const A = hexToRgb(a), B = hexToRgb(b);
     const R = Math.round(A[0] + (B[0] - A[0]) * t);
@@ -86,31 +80,89 @@ const interpHex = (a, b, t) => {
     return rgbToHex(R, G, Bc);
 };
 
-const CHORO_DARK = '#08306b'; // dark blue
-const CHORO_LIGHT = '#deebf7'; // light blue
 
-// add fixed bubble radius constant (fixes ReferenceError)
-const FIXED_BUBBLE_RADIUS = 12000;
+// Legend Component for both Choropleth and Bubble
+const MapLegends = ({ values, bubbles }) => {
+    if (!values || Object.keys(values).length === 0 || !bubbles || bubbles.length === 0) return null;
 
-const provinceStyleBase = (fillColor) => ({
-    fillColor,
-    weight: 1,
-    opacity: 1,
-    color: '#ffffff',
-    dashArray: '',
-    fillOpacity: 0.85
-});
+
+    const choroplethRanges = [];
+    for (let i = 0; i < 5; i++) {
+        const from = i * 20; // Start of the range (e.g., 0, 20, 40, ...)
+        const to = (i + 1) * 20; // End of the range (e.g., 20, 40, 60, ...)
+        const t = (from + to) / 2 / 100; // Normalize to 0-1 for color interpolation
+        const color = interpHex(CHORO_LIGHT, CHORO_DARK, t);
+
+        choroplethRanges.push({
+            from,
+            to,
+            color,
+        });
+    }
+
+    // Bubble Legend Data
+
+    const bubbleRanges = [];
+    const bubbleColors = ['#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c'];
+
+    for (let i = 0; i < 5; i++) {
+        const from = i * 20; // Start of the range (e.g., 0, 20, 40, ...)
+        const to = (i + 1) * 20; // End of the range (e.g., 20, 40, 60, ...)
+        bubbleRanges.push({
+            from,
+            to,
+            color: bubbleColors[i],
+        });
+    }
+
+    return (
+        <div className="absolute right-4 top-10 z-1000 flex flex-col space-y-4">
+            {/* Choropleth Legend */}
+            <div className="bg-white p-3 rounded shadow-lg border border-gray-300 min-w-[180px]">
+                <div className="text-sm font-semibold mb-2 text-blue-700">Indicator 1 (Choropleth)</div>
+                <div className="space-y-1">
+                    {choroplethRanges.map((range, index) => (
+                        <div key={index} className="flex items-center">
+                            <div
+                                className="w-4 h-4 mr-2 border border-gray-300"
+                                style={{ backgroundColor: range.color }}
+                            ></div>
+                            <span className="text-xs text-gray-600 font-medium">
+                                {range.from}% - {range.to}%
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Bubble Legend */}
+            <div className="bg-white p-3 rounded shadow-lg border border-gray-300 min-w-[180px]">
+                <div className="text-sm font-semibold mb-2 text-orange-600">Indicator 2 (Bubbles)</div>
+                <div className="space-y-1">
+                    {bubbleRanges.map((range, index) => (
+                        <div key={index} className="flex items-center">
+                            <div
+                                className="w-4 h-4 mr-2 border border-gray-300 rounded-full"
+                                style={{ backgroundColor: range.color }}
+                            ></div>
+                            <span className="text-xs text-gray-600 font-medium">
+                                {range.from}% - {range.to}%
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default function TwoIndicators() {
     const [geoData, setGeoData] = useState(null);
     const [loading, setLoading] = useState(true);
-    // indicator1 -> choropleth, indicator2 -> bubble size
-    const [values, setValues] = useState({}); // { province: {i1, i2} }
-
+    const [values, setValues] = useState({});
     const [indicator1, setIndicator1] = useState(null);
     const [indicator2, setIndicator2] = useState(null);
 
-    // Options for the dropdowns
     const indicatorOptions = [
         { value: 'population', label: 'Population' },
         { value: 'male_literacy_rate', label: 'Male Literacy Rate' },
@@ -125,14 +177,12 @@ export default function TwoIndicators() {
                 if (!mounted) return;
                 setGeoData(data);
 
-                // generate values per province (replace with real data as needed)
                 const vals = {};
                 data.features.forEach((f, idx) => {
                     const pname = f.properties.NAME_1 || `prov-${idx}`;
-                    // example: indicator1 in range 0..10000, indicator2 0..1e6
                     vals[pname] = {
-                        i1: Math.round(getRandom(1000, 4500000)),   // e.g., population-like
-                        i2: Math.round(getRandom(10, 100))          // e.g., percentage or score
+                        i1: Math.round(getRandom(1000, 4500000)),
+                        i2: Math.round(getRandom(10, 100))
                     };
                 });
                 setValues(vals);
@@ -142,7 +192,6 @@ export default function TwoIndicators() {
         return () => { mounted = false; };
     }, []);
 
-    // prepare choropleth color map and bubble array
     const { colorMap, bubbles } = useMemo(() => {
         if (!geoData) return { colorMap: {}, bubbles: [] };
         const provinces = geoData.features.map(f => f.properties.NAME_1);
@@ -156,10 +205,9 @@ export default function TwoIndicators() {
         geoData.features.forEach((f) => {
             const pname = f.properties.NAME_1;
             const val = values[pname] ? values[pname].i1 : min;
-            const t = (val - min) / Math.max(1, (max - min)); // 0..1
-            map[pname] = interpHex(CHORO_DARK, CHORO_LIGHT, t);
+            const t = (val - min) / Math.max(1, (max - min));
+            map[pname] = interpHex(CHORO_LIGHT, CHORO_DARK, t);
 
-            // circle: fixed radius but randomized shade based on the new CIRCLE_COLOR
             const center = provinceCenters[pname] || (() => {
                 const coords = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
                 let sumLat = 0, sumLng = 0, cnt = 0;
@@ -168,7 +216,6 @@ export default function TwoIndicators() {
             })();
             const i2 = values[pname] ? values[pname].i2 : 0;
 
-            // randomize shade around the new base color
             const shadeT = rand(-0.45, 0.45);
             const circleShade = shadeAround(CIRCLE_COLOR, shadeT);
 
@@ -192,17 +239,21 @@ export default function TwoIndicators() {
         "Technology adoption is rising."
     ];
 
-    // Helper to get random text
     const getRandomText = () => randomText[Math.floor(Math.random() * randomText.length)];
 
-    // GeoJSON style function uses colorMap and adds tooltip with random text
     const styleForFeature = (feature) => {
         const pname = feature.properties.NAME_1;
         const fill = colorMap[pname] || CHORO_LIGHT;
-        return provinceStyleBase(fill);
+        return {
+            fillColor: fill,
+            weight: 3,
+            opacity: 1,
+            color: CHORO_LIGHT,
+            dashArray: '5, 5, 5',
+            fillOpacity: 0.85,
+        };
     };
 
-    // Updated Circle hover logic with new color
     const circleEventHandlers = (b) => ({
         mouseover: (e) => {
             const layer = e.target;
@@ -212,7 +263,7 @@ export default function TwoIndicators() {
                 color: hoverShade,
                 fillColor: hoverShade,
                 fillOpacity: 0.98,
-                weight: 3
+                weight: 10
             });
             try {
                 layer.setRadius(orig * 1.08);
@@ -240,50 +291,61 @@ export default function TwoIndicators() {
         }
     });
 
-    // Updated GeoJSON hover logic with random text
     const geoJsonEventHandlers = (feature, layer) => {
         layer.on({
             mouseover: () => {
-                const hoverText = getRandomText();
-                layer.bindTooltip(`${feature.properties.NAME_1}<br>${hoverText}`, { direction: 'top', sticky: true }).openTooltip();
+                layer.setStyle({
+                    color: CHORO_DARK, // Green border on hover
+                    weight: 5, // Increased border size on hover
+                });
             },
             mouseout: () => {
-                layer.closeTooltip();
-            }
+                layer.setStyle({
+                    color: '#ffffff', // Reset to white border
+                    weight: 2, // Reset border size
+                });
+            },
         });
     };
 
     return (
         <div className="flex h-full w-full overflow-hidden">
             {/* Scrollable sidebar */}
-            <div className="w-full md:w-2/7 flex flex-col gap-4 overflow-y-auto p-4 mb-10 bg-gray-50">
+            <div className="w-full md:w-1/5 flex flex-col gap-4 overflow-y-auto p-4 mb-10 bg-gray-50">
                 <div className="bg-white rounded-lg shadow-sm p-4">
-                    <h2 className="text-xl font-bold text-blue-700 mb-2">Please select the indicators</h2>
-                    <p className="text-gray-500 text-sm">
+                    <h2 className="text-lg font-semibold text-blue-700 mb-2">Please select the indicators</h2>
+                    <p className="text-gray-500 text-xs">
                         Choose two indicators from the dropdowns below to visualize and compare data for Afghanistan provinces.
                     </p>
                 </div>
 
                 <div className="bg-white rounded-lg shadow-sm p-4">
-                    <h3 className="text-lg font-bold text-blue-700 mb-2">Indicator 1</h3>
+                    <h3 className="text-sm font-bold text-blue-700 mb-2">Indicator 1</h3>
                     <Select
                         options={indicatorOptions}
                         value={indicator1}
                         onChange={(selectedOption) => setIndicator1(selectedOption)}
                         placeholder="Select Indicator 1"
                         className="mb-4"
+                        styles={{
+                            control: (base) => ({
+                                ...base,
+                                minHeight: 28,
+                                fontSize: 12,
+                            }),
+                        }}
                     />
-                    <label className="text-blue-700 font-semibold block mb-1">Value</label>
+                    <label className="text-blue-700 font-medium block mb-1 text-xs">Value</label>
                     <div className="w-full h-1 rounded bg-gradient-to-r from-blue-500 to-orange-400 mb-2" />
-                    <label className="text-blue-700 font-semibold block mb-1">Definition</label>
+                    <label className="text-blue-700 font-medium block mb-1 text-xs">Definition</label>
                     <textarea
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[80px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="w-full border border-gray-300 rounded-lg px-2 py-1 min-h-[60px] text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
                         defaultValue="You can add your analysis or comments here about the selected indicators and provinces."
                     />
                 </div>
 
                 <div className="bg-white rounded-lg shadow-sm p-4">
-                    <h3 className="text-lg font-bold text-orange-500 mb-2">Indicator 2</h3>
+                    <h3 className="text-sm font-bold text-orange-500 mb-2">Indicator 2</h3>
                     <Select
                         options={indicatorOptions}
                         value={indicator2}
@@ -293,36 +355,39 @@ export default function TwoIndicators() {
                         styles={{
                             control: (base) => ({
                                 ...base,
-                                borderColor: '#f97316', // Orange border
-                                '&:hover': { borderColor: '#ea580c' }, // Darker orange on hover
+                                minHeight: 28,
+                                fontSize: 12,
+                                borderColor: '#f97316',
+                                '&:hover': { borderColor: '#ea580c' },
                             }),
                         }}
                     />
-                    <label className="text-orange-500 font-semibold block mb-1">Value</label>
+                    <label className="text-orange-500 font-medium block mb-1 text-xs">Value</label>
                     <div className="w-full h-1 rounded bg-gradient-to-r from-orange-400 to-blue-500 mb-2" />
-                    <label className="text-orange-500 font-semibold block mb-1">Definition</label>
+                    <label className="text-orange-500 font-medium block mb-1 text-xs">Definition</label>
                     <textarea
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[80px] text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        className="w-full border border-gray-300 rounded-lg px-2 py-1 min-h-[60px] text-xs focus:outline-none focus:ring-2 focus:ring-orange-400"
                         defaultValue="You can add your analysis or comments here about the selected indicators and provinces."
                     />
                 </div>
             </div>
 
             {/* Map container - fixed, no scrolling */}
-            <div className="md:w-5/7 flex-1 overflow-hidden">
+            <div className="md:w-4/5 flex-1 overflow-hidden relative">
                 <div className="w-full h-full">
                     <ShowInFullScreen
                         modalClassName="w-full h-full"
                         previewClassName="relative w-full h-full"
                         containerClassName="w-full h-full"
-                        contentClassName='w-full h-full flex justify-center items-center'
+                        contentClassName="w-full h-full flex justify-center items-center"
                     >
                         <MapContainer
                             key={`country-map-${geoData ? geoData.features.length : 0}`}
-                            center={[33.9391, 67.7100]} zoom={6} style={{ width: "100%", height: "90%" }}
+                            center={[33.9391, 67.7100]}
+                            zoom={6}
+                            style={{ width: '100%', height: '90%' }}
                             zoomSnap={0.3}
                             zoomDelta={0.3}
-
                         >
                             <TileLayer
                                 attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
@@ -335,7 +400,7 @@ export default function TwoIndicators() {
                                     onEachFeature={geoJsonEventHandlers}
                                 />
                             )}
-                            {bubbles.map(b => (
+                            {bubbles.map((b) => (
                                 <Circle
                                     key={`${b.province}-${b.value}`}
                                     center={b.position}
@@ -344,11 +409,12 @@ export default function TwoIndicators() {
                                         color: b.color,
                                         fillColor: b.color,
                                         fillOpacity: 0.85,
-                                        weight: 1
+                                        weight: 1,
                                     }}
                                     eventHandlers={circleEventHandlers(b)}
                                 />
                             ))}
+                            <MapLegends colorMap={colorMap} values={values} bubbles={bubbles} />
                         </MapContainer>
                     </ShowInFullScreen>
                 </div>

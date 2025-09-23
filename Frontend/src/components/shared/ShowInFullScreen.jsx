@@ -5,7 +5,7 @@ import { useReactToPrint } from 'react-to-print';
 import domtoimage from 'dom-to-image';
 // TODO: improve this to not scroll the source and title and subtitle, 
 // change the content ref to only the children area or overflow auto area and then manually
-// added in the download the title and subtitle and for the printing also
+// added in the download the title and subtitle and for the printing
 function ShowInFullScreen({
     children,
     modalClassName = "w-full max-w-4xl py-10 px-5",

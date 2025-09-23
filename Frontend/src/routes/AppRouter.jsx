@@ -22,6 +22,7 @@ const Map = lazy(() => import("../components/ui/map"));
 const CountryDashboard = lazy(() => import("../components/ui/CountryDashboard"));
 const NotFound = lazy(() => import("../components/shared/NotFound404"));
 const AddChart = lazy(() => import("../components/ui/AddChart"));
+const Intervention = lazy(() => import("../components/ui/Intervention"));
 
 // Simple route-level fallback (keep it light)
 function RouteFallback() {
@@ -103,6 +104,14 @@ export default function AppRouter() {
               <AddChart />
             </Suspense>
           }
+          />
+          <Route
+            path="Intervention"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <Intervention />
+              </Suspense>
+            }
           />
         </Route>
 

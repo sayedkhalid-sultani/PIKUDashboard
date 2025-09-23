@@ -1,8 +1,9 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/Shared/Store";
-import { FiMap, FiUser, FiPieChart, FiSettings, FiLock, FiLogOut, FiGlobe, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiMap, FiUser, FiSettings, FiLock, FiLogOut, FiGlobe, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { MdAddChart } from "react-icons/md";
+import { MdTrackChanges } from "react-icons/md";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
@@ -92,6 +93,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </NavLink>
 
 
+            <NavLink
+              to="/dashboard/Intervention"
+              className={isOpen ? linkClasses : collapsedLinkClasses}
+              title="Intervention"
+            >
+              <MdTrackChanges className="text-lg" />
+              {isOpen && <span>Intervention</span>}
+            </NavLink>
             <NavLink
               to="/dashboard/AddChart"
               className={isOpen ? linkClasses : collapsedLinkClasses}

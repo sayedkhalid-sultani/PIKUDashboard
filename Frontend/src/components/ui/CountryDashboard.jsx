@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Map from "./map";
 import TwoIndicators from "./TwoIndicators";
 import SingleIndicator from './SingleIndicator';
+import Intervention from './Intervention'; // Import the Intervention component
 
 const tabs = [
     { name: "Map", key: "map-tab-unique" },
@@ -17,6 +18,7 @@ export default function CountryDashboard() {
     const analyzeTabs = [
         { name: "Single Indicator", key: "single-indicator-tab-unique" },
         { name: "Two Indicators", key: "two-indicators-tab-unique" },
+        { name: "Intervention", key: "intervention-tab-unique" }, // Added Intervention tab
     ];
 
     // Store the active tab in localStorage to persist across renders
@@ -84,6 +86,7 @@ export default function CountryDashboard() {
                         <div className="flex-1 overflow-hidden" style={{ height: '100%' }}>
                             {analyzeTab === "single-indicator-tab-unique" && <SingleIndicator />}
                             {analyzeTab === "two-indicators-tab-unique" && <TwoIndicators />}
+                            {analyzeTab === "intervention-tab-unique" && <Intervention />} {/* Render Intervention */}
                         </div>
                     </>
                 )}
