@@ -329,6 +329,7 @@ export default function Map() {
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
                             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                            crossOrigin={true}
                         />
                         {geoData && <GeoJSON data={geoData} style={geoJsonStyle()} />}
                         {circles.length > 0 && <CirclesLayer circles={circles} />}

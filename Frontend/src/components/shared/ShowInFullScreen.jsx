@@ -1,7 +1,7 @@
+import leafletImage from "leaflet-image"; // 👈 add this import
 import { useState, useEffect, useRef } from 'react';
 import { FiMaximize, FiX, FiPrinter, FiDownload, FiMapPin } from 'react-icons/fi';
 import { PiMicrosoftExcelLogoBold } from "react-icons/pi";
-import { useReactToPrint } from 'react-to-print';
 import domtoimage from 'dom-to-image';
 // TODO: improve this to not scroll the source and title and subtitle, 
 // change the content ref to only the children area or overflow auto area and then manually
@@ -40,11 +40,63 @@ function ShowInFullScreen({
         };
     }, [open]);
 
-    // Print handler using react-to-print
-    const handlePrint = useReactToPrint({
-        contentRef,
-        documentTitle: 'Dashboard Chart',
-    });
+
+    // Replace your existing handlePrint with this:
+    const handlePrint = async () => {
+        const chartEl = contentRef.current;
+        if (!chartEl) return;
+
+        try {
+            let dataUrl;
+
+            // Try to detect if there is a Leaflet map inside
+            const leafletMapEl = chartEl.querySelector(".leaflet-container");
+            if (leafletMapEl && leafletMapEl._leaflet_id) {
+                // Capture the actual Leaflet map object from its DOM element
+                const map = leafletMapEl._leaflet_map || leafletMapEl._leaflet; // some builds attach differently
+                if (map) {
+                    dataUrl = await new Promise((resolve, reject) => {
+                        leafletImage(map, (err, canvas) => {
+                            if (err) reject(err);
+                            else resolve(canvas.toDataURL("image/png"));
+                        });
+                    });
+                }
+            }
+
+            // Fallback: use dom-to-image for non-map content
+            if (!dataUrl) {
+                dataUrl = await domtoimage.toPng(chartEl, {
+                    cacheBust: true,
+                    bgcolor: "white",
+                    style: {
+                        overflow: "visible",
+                        height: "auto",
+                    },
+                });
+            }
+
+            // Open print window
+            const printWindow = window.open("", "_blank", "width=800,height=600");
+            if (!printWindow) return;
+
+            printWindow.document.write("<html><head><title>Print</title></head><body style='margin:20px; font-family:sans-serif;'>");
+
+            // Captured content image
+            printWindow.document.write(`<img src="${dataUrl}" style="width:100%; display:block;" />`);
+
+            printWindow.document.write("</body></html>");
+            printWindow.document.close();
+
+            printWindow.onload = () => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            };
+        } catch (err) {
+            console.error("Print failed:", err);
+        }
+    };
 
     // Download as image handler (using dom-to-image)
     const handleDownloadImage = async () => {
