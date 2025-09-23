@@ -334,9 +334,8 @@ export default function TwoIndicators() {
                                 fontSize: 12,
                             }),
                         }}
+
                     />
-                    <label className="text-blue-700 font-medium block mb-1 text-xs">Value</label>
-                    <div className="w-full h-1 rounded bg-gradient-to-r from-blue-500 to-orange-400 mb-2" />
                     <label className="text-blue-700 font-medium block mb-1 text-xs">Definition</label>
                     <textarea
                         className="w-full border border-gray-300 rounded-lg px-2 py-1 min-h-[60px] text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -362,8 +361,6 @@ export default function TwoIndicators() {
                             }),
                         }}
                     />
-                    <label className="text-orange-500 font-medium block mb-1 text-xs">Value</label>
-                    <div className="w-full h-1 rounded bg-gradient-to-r from-orange-400 to-blue-500 mb-2" />
                     <label className="text-orange-500 font-medium block mb-1 text-xs">Definition</label>
                     <textarea
                         className="w-full border border-gray-300 rounded-lg px-2 py-1 min-h-[60px] text-xs focus:outline-none focus:ring-2 focus:ring-orange-400"
@@ -388,6 +385,7 @@ export default function TwoIndicators() {
                             style={{ width: '100%', height: '90%' }}
                             zoomSnap={0.3}
                             zoomDelta={0.3}
+                            attributionControl={false}
                         >
                             <TileLayer
                                 attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'

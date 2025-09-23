@@ -325,6 +325,7 @@ export default function Map() {
                             mapRef.current = m;
                         }}
                         style={{ width: '100%', height: '90%' }}
+                        attributionControl={false}
                     >
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
@@ -388,7 +389,6 @@ export default function Map() {
                             />
                             <YAxis />
                             <Tooltip />
-                            <Legend />
                             <RechartsBar dataKey="density" fill="#2563eb" name="Density" />
                             <RechartsBar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
                             <RechartsBar dataKey="employment" fill="#22c55e" name="Employment (%)" />
@@ -427,7 +427,6 @@ export default function Map() {
                                 <Cell fill="#ef4444" />
                             </Pie>
                             <Tooltip />
-                            <Legend />
                         </PieChart>
                     </ResponsiveContainer>
                 </ShowInFullScreen>
@@ -457,7 +456,6 @@ export default function Map() {
                             <XAxis dataKey="year" />
                             <YAxis />
                             <Tooltip />
-                            <Legend />
                             <Line type="monotone" dataKey="population" stroke="#22c55e" strokeWidth={2} name="Population Growth" />
                             <Line type="monotone" dataKey="gdp" stroke="#6366f1" strokeWidth={2} name="GDP Growth" />
                         </LineChart>
@@ -489,7 +487,6 @@ export default function Map() {
                                 <YAxis yAxisId="left" label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }} />
                                 <YAxis yAxisId="right" orientation="right" label={{ value: 'GDP (Billion $)', angle: 90, position: 'insideRight' }} />
                                 <Tooltip />
-                                <Legend />
                                 <RechartsBar yAxisId="left" dataKey="education" fill="#6366f1" name="Education" />
                                 <RechartsBar yAxisId="left" dataKey="health" fill="#f59e42" name="Health" />
                                 <Line yAxisId="right" type="monotone" dataKey="gdp" stroke="#22c55e" strokeWidth={2} name="GDP" />

@@ -90,7 +90,7 @@ const ChoroplethLegend = ({ values }) => {
     }
 
     return (
-        <div className="absolute top-10 right-4 z-1000 bg-white p-3 rounded shadow-md border border-gray-300">
+        <div className="absolute bottom-4 right-2 z-1000 bg-white p-3 rounded shadow-md border border-gray-300">
             <div className="text-sm font-semibold mb-2 text-gray-700">Indicator Values (%)</div>
             {ranges.map((range, index) => (
                 <div key={index} className="flex items-center mb-1">
@@ -347,6 +347,7 @@ function SingleIndicator() {
                         zoomSnap={0.3}
                         zoomDelta={0.3}
                         scrollWheelZoom={true}
+                        attributionControl={false}
                     >
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
@@ -413,7 +414,6 @@ function SingleIndicator() {
                             <XAxis dataKey="province" tick={{ fontSize: 10 }} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip />
-                            <Legend wrapperStyle={{ fontSize: 10 }} />
                             <Bar dataKey="density" fill="#2563eb" name="Density" />
                             <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
                             <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
@@ -454,7 +454,6 @@ function SingleIndicator() {
                                 <Cell fill="#ef4444" />
                             </Pie>
                             <Tooltip />
-                            <Legend wrapperStyle={{ fontSize: 10 }} />
                         </PieChart>
                     </ResponsiveContainer>
                 </ShowInFullScreen>

@@ -311,6 +311,7 @@ function Intervention() {
                         center={[33.9391, 67.71]}
                         zoom={6}
                         style={{ width: '100%', height: '90%' }}
+                        attributionControl={false}
                     >
                         <TileLayer
                             attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
@@ -382,7 +383,6 @@ function Intervention() {
                             <XAxis dataKey="province" tick={{ fontSize: 10 }} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip />
-                            <Legend wrapperStyle={{ fontSize: 10 }} />
                             <Bar dataKey="value" fill="#2563eb" name={selectedIndicator?.label} />
                         </BarChart>
                     </ResponsiveContainer>
