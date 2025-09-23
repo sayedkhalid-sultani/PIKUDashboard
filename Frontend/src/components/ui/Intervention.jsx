@@ -383,6 +383,7 @@ function Intervention() {
                             <XAxis dataKey="province" tick={{ fontSize: 10 }} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip />
+                            <length />
                             <Bar dataKey="value" fill="#2563eb" name={selectedIndicator?.label} />
                         </BarChart>
                     </ResponsiveContainer>

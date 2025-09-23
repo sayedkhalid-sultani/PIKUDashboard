@@ -1,5 +1,5 @@
 import leafletImage from "leaflet-image"; // 👈 add this import
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, cloneElement } from 'react';
 import { FiMaximize, FiX, FiPrinter, FiDownload, FiMapPin } from 'react-icons/fi';
 import { PiMicrosoftExcelLogoBold } from "react-icons/pi";
 import domtoimage from 'dom-to-image';
@@ -97,7 +97,6 @@ function ShowInFullScreen({
             console.error("Print failed:", err);
         }
     };
-
     // Download as image handler (using dom-to-image)
     const handleDownloadImage = async () => {
         const chartEl = contentRef.current;
@@ -176,9 +175,27 @@ function ShowInFullScreen({
         }
     };
 
+    // Function to conditionally hide/show Legend
+    const modifyChildren = (children) => {
+        return React.Children.map(children, (child) => {
+            if (!React.isValidElement(child)) return child;
 
+            // Check if the child is a Legend component
+            if (child.type && child.type.name === 'Legend') {
+                // Hide Legend in preview mode
+                return open ? child : null;
+            }
 
+            // Recursively check child elements
+            if (child.props && child.props.children) {
+                return cloneElement(child, {
+                    children: modifyChildren(child.props.children),
+                });
+            }
 
+            return child;
+        });
+    };
 
     return (
         <div className={`relative ${containerClassName}`}>
@@ -191,7 +208,7 @@ function ShowInFullScreen({
                             <p className="text-xs text-gray-500">{subtitle}</p>
                         </div>
                         <div className="overflow-auto">
-                            {children}
+                            {modifyChildren(children)}
                         </div>
                         {(source || lastUpdate) && (
                             <div className="mt-4 text-xs text-gray-500 border-t border-gray-200 pt-2">
@@ -245,7 +262,7 @@ function ShowInFullScreen({
                     </div>
                 ) : (
                     <>
-                        {children}
+                        {modifyChildren(children)}
                         {(source || lastUpdate) && (
                             <div className="mt-4 text-xs text-gray-500 border-t border-gray-200 pt-2">
                                 {source && (
@@ -349,7 +366,7 @@ function ShowInFullScreen({
                                         <p className="text-xs text-gray-500">{subtitle}</p>
                                     </div>
                                 ) : null}
-                                {children}
+                                {modifyChildren(children)}
                                 {/* TODO: set the border or make separate line to 100 to get full width, or first todo will solve issue */}
                                 {(source || lastUpdate) && (
                                     <div className="mt-4 text-xs text-gray-500 border-t border-gray-200 pt-2 w-full">

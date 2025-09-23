@@ -414,6 +414,7 @@ function SingleIndicator() {
                             <XAxis dataKey="province" tick={{ fontSize: 10 }} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
                             <Bar dataKey="density" fill="#2563eb" name="Density" />
                             <Bar dataKey="literacy" fill="#fbbf24" name="Literacy (%)" />
                             <Bar dataKey="employment" fill="#22c55e" name="Employment (%)" />
@@ -454,6 +455,7 @@ function SingleIndicator() {
                                 <Cell fill="#ef4444" />
                             </Pie>
                             <Tooltip />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
                         </PieChart>
                     </ResponsiveContainer>
                 </ShowInFullScreen>
