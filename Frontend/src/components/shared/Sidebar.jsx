@@ -1,17 +1,11 @@
-// src/components/shared/Sidebar.jsx
-import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/Shared/Store";
+import { FiMap, FiUser, FiSettings, FiLock, FiLogOut, FiGlobe, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { MdAddChart } from "react-icons/md";
+import { MdTrackChanges } from "react-icons/md";
 
-const linkClasses = ({ isActive }) =>
-  `block rounded px-3 py-2 text-sm transition ${
-    isActive
-      ? "bg-blue-50 text-blue-700 font-semibold"
-      : "text-slate-700 hover:bg-slate-100"
-  }`;
-
-const Sidebar = () => {
+const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -24,58 +18,161 @@ const Sidebar = () => {
     navigate("/login", { replace: true });
   };
 
+  // Link classes for expanded state
+  const linkClasses = ({ isActive }) =>
+    `flex items-center space-x-3 rounded-lg px-4 py-3 transition-all ${isActive
+      ? "bg-blue-100 text-blue-700 font-semibold"
+      : "text-gray-700 hover:bg-gray-100"
+    }`;
+
+  // Link classes for collapsed state (icon only)
+  const collapsedLinkClasses = ({ isActive }) =>
+    `flex items-center justify-center rounded-lg p-3 transition-all ${isActive
+      ? "bg-blue-100 text-blue-700"
+      : "text-gray-700 hover:bg-gray-100"
+    }`;
+
   return (
-    <aside className="w-64 bg-gray-100 p-6 flex flex-col h-full border-r border-gray-200">
-      <nav className="space-y-2 flex-1">
-        {/* Dashboard root */}
-        <NavLink to="/dashboard" end className={linkClasses}>
-          Dashboard
-        </NavLink>
+    <div className="flex">
+      <aside
+        className={`relative h-screen bg-white border-r border-gray-200 transition-all duration-300 ${isOpen ? "w-64" : "w-20"
+          }`}
+      >
+        <div className="h-full flex flex-col p-5">
+          {/* Logo and Toggle Button */}
+          <div className={`flex items-center ${isOpen ? "justify-between" : "justify-center"} mb-8`}>
+            <div className={`flex items-center ${isOpen ? "space-x-2" : ""}`}>
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                <FiGlobe className="text-white text-lg" />
+              </div>
+              {isOpen && (
+                <h1 className="text-xl font-bold text-gray-800">PIKU Dashboard</h1>
+              )}
+            </div>
 
-        {/* Dashboard children */}
-        <div className="flex flex-col space-y-1 pl-3 mt-1 border-l border-gray-200">
-          <NavLink to="/dashboard/CountryProfile" className={linkClasses}>
-            Country Profile
-          </NavLink>
-          <NavLink to="/dashboard/CountryProfilemui" className={linkClasses}>
-            Country Profile mui
-          </NavLink>
+            {/* Toggle Button Inside Header */}
+            {isOpen && (
+              <button
+                onClick={toggleSidebar}
+                className="bg-blue-600 text-white shadow-lg rounded-full p-2 cursor-pointer hover:bg-blue-700 transition-all flex items-center justify-center "
+                title="Collapse Sidebar"
+              >
+                <FiChevronLeft className="text-lg" />
+              </button>
+            )}
+          </div>
 
-          <NavLink to="/dashboard/Analyze" className={linkClasses}>
-            Analyze
-          </NavLink>
+          {/* Navigation */}
+          <nav className="space-y-1 flex-1">
+            {/* Dashboard children */}
+            <NavLink
+              to="/dashboard/CountryDashboard"
+              className={isOpen ? linkClasses : collapsedLinkClasses}
+              title="Country Map"
+            >
+              <FiMap className="text-lg" />
+              {isOpen && <span>Country Map</span>}
+            </NavLink>
+
+            <NavLink
+              to="/dashboard/CountryProfile"
+              className={isOpen ? linkClasses : collapsedLinkClasses}
+              title="Country Profile"
+            >
+              <FiUser className="text-lg" />
+              {isOpen && <span>Country Profile</span>}
+            </NavLink>
+
+            <NavLink
+              to="/dashboard/CountryProfilemui"
+              className={isOpen ? linkClasses : collapsedLinkClasses}
+              title="Country Profile MUI"
+            >
+              <FiUser className="text-lg" />
+              {isOpen && <span>Country Profile MUI</span>}
+            </NavLink>
+
+
+            <NavLink
+              to="/dashboard/Intervention"
+              className={isOpen ? linkClasses : collapsedLinkClasses}
+              title="Intervention"
+            >
+              <MdTrackChanges className="text-lg" />
+              {isOpen && <span>Intervention</span>}
+            </NavLink>
+            <NavLink
+              to="/dashboard/AddChart"
+              className={isOpen ? linkClasses : collapsedLinkClasses}
+              title="Add Indicator"
+            >
+              <MdAddChart className="text-lg" />
+              {isOpen && <span>Add Chart</span>}
+            </NavLink>
+
+            {/* Change Password */}
+            <NavLink
+              to="/change-password"
+              className={isOpen ? linkClasses : collapsedLinkClasses}
+              title="Change Password"
+            >
+              <FiLock className="text-lg" />
+              {isOpen && <span>Change Password</span>}
+            </NavLink>
+          </nav>
+
+          {/* Admin area */}
+          {isAdmin && (
+            <div className="pt-5 border-t border-gray-200">
+              {isOpen && (
+                <h3 className="text-xs font-semibold uppercase text-gray-500 px-4 mb-3">Admin</h3>
+              )}
+              <div className="space-y-1">
+                <NavLink
+                  to="/admin/indicators"
+                  className={isOpen ? linkClasses : collapsedLinkClasses}
+                  title="Indicators"
+                >
+                  <FiSettings className="text-lg" />
+                  {isOpen && <span>Indicators</span>}
+                </NavLink>
+                <NavLink
+                  to="/admin/users"
+                  className={isOpen ? linkClasses : collapsedLinkClasses}
+                  title="Users"
+                >
+                  <FiUser className="text-lg" />
+                  {isOpen && <span>Users</span>}
+                </NavLink>
+              </div>
+            </div>
+          )}
+
+          {/* Logout Button */}
+          <div className="mt-5">
+            <button
+              onClick={handleLogout}
+              className={`${isOpen ? "w-full flex items-center space-x-3 rounded-lg px-4 py-3" : "w-full flex items-center justify-center rounded-lg p-3"} text-gray-700 hover:bg-gray-100 transition-all`}
+              title="Logout"
+            >
+              <FiLogOut className="text-lg" />
+              {isOpen && <span>Logout</span>}
+            </button>
+          </div>
         </div>
 
-        {/* Change Password */}
-        <NavLink to="/change-password" className={linkClasses}>
-          Change Password
-        </NavLink>
-
-        {/* Admin area */}
-        {isAdmin && (
-          <>
-            <div className="mt-3 text-xs font-semibold uppercase text-slate-500 px-3">
-              Admin
-            </div>
-            <div className="ml-0 pl-3 border-l border-gray-200 flex flex-col space-y-1 mt-1">
-              <NavLink to="/admin/indicators" className={linkClasses}>
-                Indicators
-              </NavLink>
-              <NavLink to="/admin/users" className={linkClasses} end>
-                Users
-              </NavLink>
-            </div>
-          </>
+        {/* External Toggle Button - Only shown when sidebar is collapsed */}
+        {!isOpen && (
+          <button
+            onClick={toggleSidebar}
+            className="absolute -right-3 top-5 z-2000 bg-blue-600 text-white shadow-lg rounded-full p-2 cursor-pointer hover:bg-blue-700 transition-all flex items-center justify-center"
+            title="Expand Sidebar"
+          >
+            <FiChevronRight className="text-lg" />
+          </button>
         )}
-      </nav>
-
-      <button
-        onClick={handleLogout}
-        className="mt-auto rounded border px-3 py-2 text-sm font-medium hover:bg-gray-200"
-      >
-        Logout
-      </button>
-    </aside>
+      </aside>
+    </div>
   );
 };
 
