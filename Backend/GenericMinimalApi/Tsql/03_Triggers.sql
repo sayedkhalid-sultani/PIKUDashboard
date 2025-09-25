@@ -10,7 +10,7 @@
 --    - For time grouping: find previous value in same time period or previous time period
 --    - For location grouping: find previous value in location hierarchy based on OrderIndex
 -- 5. Return found value or NULL if no value found
-CREATE OR ALTER FUNCTION dbo.fn_FindPreviousValue(@DataValueId INT)
+CREATE OR ALTER FUNCTION dbo.fn_FindPreviousValue(@IndicatorId INT)
 RETURNS DECIMAL(18,2)
 AS
 BEGIN
@@ -18,39 +18,35 @@ BEGIN
     DECLARE @GroupBy NVARCHAR(50);
 
     ---------------------------------------------------
-    -- 1) Get indicator ID and other details from DataValues
+    -- 1) Find top-level parent and its GroupBy setting
     ---------------------------------------------------
-    DECLARE @IndicatorId INT, @CalendarId INT, @LocationId INT;
+    DECLARE @TopIndicatorId INT = dbo.fn_GetTopLevelParent(@IndicatorId);
+
+    SELECT TOP 1 @GroupBy = cc.GroupBy
+    FROM ChartConfigs cc
+    WHERE cc.IndicatorId = @TopIndicatorId
+    ORDER BY cc.Id DESC;
+
+    ---------------------------------------------------
+    -- 2) Get current indicator's calendar/location info
+    ---------------------------------------------------
+    DECLARE @CalendarId INT, @LocationId INT;
     DECLARE @CurrOrder INT, @ParentId INT;
     DECLARE @CurrYear INT, @CurrMonth INT, @CurrQuarter INT;
-    DECLARE @TopIndicatorId INT;
 
-    SELECT 
-        @IndicatorId = i.Id,
+    SELECT TOP 1 
         @CalendarId = dv.CalendarId,
         @LocationId = dv.LocationId,
         @CurrOrder = i.OrderIndex,
         @ParentId = i.ParentId,
         @CurrYear = c.Year,
         @CurrMonth = c.Month,
-        @CurrQuarter = c.Quarter,
-        @TopIndicatorId = dbo.fn_GetTopLevelParent(i.Id)
+        @CurrQuarter = c.Quarter
     FROM DataValues dv
     INNER JOIN Indicators i ON dv.IndicatorId = i.Id
     INNER JOIN Calendars c ON dv.CalendarId = c.Id
-    WHERE dv.Id = @DataValueId;
-
-    -- If no data found, return NULL
-    IF @IndicatorId IS NULL
-        RETURN NULL;
-
-    ---------------------------------------------------
-    -- 2) Get GroupBy setting from the top-level parent
-    ---------------------------------------------------
-    SELECT TOP 1 @GroupBy = cc.GroupBy
-    FROM ChartConfigs cc
-    WHERE cc.IndicatorId = @TopIndicatorId
-    ORDER BY cc.Id DESC;
+    WHERE i.Id = @IndicatorId
+    ORDER BY dv.CalendarId DESC;
 
     ---------------------------------------------------
     -- 3) Case A: No GroupBy → use pure hierarchy logic
@@ -113,90 +109,72 @@ BEGIN
     END
 
     ---------------------------------------------------
-    -- 4) Case B: GroupBy defined → use simplified query logic
+    -- 4) Case B: GroupBy defined → time/location logic
     ---------------------------------------------------
-    ELSE IF @GroupBy IN ('Yearly','Quarterly','Monthly')
+    ELSE
     BEGIN
-        ;WITH CurrentData AS (
-            SELECT 
-                @CurrYear AS CurrentYear,
-                @CurrOrder AS CurrentOrder,
-                @ParentId AS ParentId,
-                @TopIndicatorId AS RootId,
-                @CurrQuarter AS CurrentQuarter,
-                @CurrMonth AS CurrentMonth
-        )
-        SELECT @PreviousValue = prev.Value
-        FROM CurrentData cd
-        OUTER APPLY (
-            SELECT TOP 1 dv.Value
-            FROM DataValues dv
-            INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-            INNER JOIN Calendars c ON dv.CalendarId = c.Id
-            WHERE dbo.fn_GetTopLevelParent(i.Id) = cd.RootId  -- Under same root
-              AND (
-                  -- Yearly grouping
-                  (@GroupBy = 'Yearly' AND (
-                      (cd.CurrentOrder > 1 AND i.ParentId = cd.ParentId AND i.OrderIndex = cd.CurrentOrder - 1 AND c.Year = cd.CurrentYear)
-                      OR 
-                      (cd.CurrentOrder = 1 AND c.Year < cd.CurrentYear)  -- Changed to < instead of = -1
-                  ))
-                  OR
-                  -- Quarterly grouping  
-                  (@GroupBy = 'Quarterly' AND (
-                      (cd.CurrentOrder > 1 AND i.ParentId = cd.ParentId AND i.OrderIndex = cd.CurrentOrder - 1 AND c.Year = cd.CurrentYear AND c.Quarter = cd.CurrentQuarter)
-                      OR 
-                      (cd.CurrentOrder = 1 AND (
-                          (c.Year = cd.CurrentYear AND c.Quarter < cd.CurrentQuarter) OR  -- Same year, previous quarter
-                          (c.Year < cd.CurrentYear)  -- Previous years
-                      ))
-                  ))
-                  OR
-                  -- Monthly grouping
-                  (@GroupBy = 'Monthly' AND (
-                      (cd.CurrentOrder > 1 AND i.ParentId = cd.ParentId AND i.OrderIndex = cd.CurrentOrder - 1 AND c.Year = cd.CurrentYear AND c.Month = cd.CurrentMonth)
-                      OR 
-                      (cd.CurrentOrder = 1 AND (
-                          (c.Year = cd.CurrentYear AND c.Month < cd.CurrentMonth) OR  -- Same year, previous month
-                          (c.Year < cd.CurrentYear)  -- Previous years
-                      ))
-                  ))
-              )
-            ORDER BY 
-                c.Year DESC,
-                c.Quarter DESC,
-                c.Month DESC,
-                i.OrderIndex DESC,
-                dv.CalendarId DESC
-        ) prev;
-    END
-    ELSE IF @GroupBy IN ('Province','Region')
-    BEGIN
-        DECLARE @CurrLocationOrder INT, @ParentLocationId INT;
-        SELECT @CurrLocationOrder = OrderIndex, @ParentLocationId = ParentId
-        FROM Locations WHERE Id = @LocationId;
-
-        IF @CurrLocationOrder > 1
+        -- -------- Yearly / Quarterly / Monthly --------
+        IF @GroupBy IN ('Yearly','Quarterly','Monthly')
         BEGIN
-            SELECT TOP 1 @PreviousValue = dv.Value
-            FROM DataValues dv
-            INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-            INNER JOIN Locations l ON dv.LocationId = l.Id
-            WHERE i.ParentId = @ParentId
-              AND l.ParentId = @ParentLocationId
-              AND l.OrderIndex < @CurrLocationOrder
-            ORDER BY l.OrderIndex DESC, dv.Id DESC;
+            IF @CurrOrder > 1
+            BEGIN
+                -- Previous sibling in same group
+                SELECT TOP 1 @PreviousValue = dv.Value
+                FROM DataValues dv
+                INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+                INNER JOIN Calendars c ON dv.CalendarId = c.Id
+                WHERE i.ParentId = @ParentId
+                  AND i.OrderIndex < @CurrOrder
+                  AND ((@GroupBy='Yearly' AND c.Year=@CurrYear)
+                       OR (@GroupBy='Quarterly' AND c.Year=@CurrYear AND c.Quarter=@CurrQuarter)
+                       OR (@GroupBy='Monthly' AND c.Year=@CurrYear AND c.Month=@CurrMonth))
+                ORDER BY i.OrderIndex DESC, c.CalendarDate DESC;
+            END
+            ELSE
+            BEGIN
+                -- First order → find most recent previous group
+                SELECT TOP 1 @PreviousValue = dv.Value
+                FROM DataValues dv
+                INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+                INNER JOIN Calendars c ON dv.CalendarId = c.Id
+                WHERE i.ParentId = @ParentId
+                  AND ((@GroupBy='Yearly' AND c.Year < @CurrYear)
+                       OR (@GroupBy='Quarterly' AND (c.Year < @CurrYear OR (c.Year=@CurrYear AND c.Quarter < @CurrQuarter)))
+                       OR (@GroupBy='Monthly' AND (c.Year < @CurrYear OR (c.Year=@CurrYear AND c.Month < @CurrMonth))))
+                ORDER BY c.Year DESC, c.Quarter DESC, c.Month DESC, i.OrderIndex DESC;
+            END
         END
-        ELSE
+
+        -- -------- Province / Region --------
+        ELSE IF @GroupBy IN ('Province','Region')
         BEGIN
-            SELECT TOP 1 @PreviousValue = dv.Value
-            FROM DataValues dv
-            INNER JOIN Indicators i ON dv.IndicatorId = i.Id
-            INNER JOIN Locations l ON dv.LocationId = l.Id
-            WHERE i.ParentId = @ParentId
-              AND l.ParentId = @ParentLocationId
-              AND l.OrderIndex < @CurrLocationOrder
-            ORDER BY l.OrderIndex DESC, dv.Id DESC;
+            DECLARE @CurrLocationOrder INT, @ParentLocationId INT;
+            SELECT @CurrLocationOrder = OrderIndex, @ParentLocationId = ParentId
+            FROM Locations WHERE Id = @LocationId;
+
+            IF @CurrLocationOrder > 1
+            BEGIN
+                SELECT TOP 1 @PreviousValue = dv.Value
+                FROM DataValues dv
+                INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+                INNER JOIN Locations l ON dv.LocationId = l.Id
+                WHERE i.ParentId = @ParentId
+                  AND l.ParentId = @ParentLocationId
+                  AND l.OrderIndex < @CurrLocationOrder
+                ORDER BY l.OrderIndex DESC, dv.Id DESC;
+            END
+            ELSE
+            BEGIN
+                -- First location in order → find any lower-order previous
+                SELECT TOP 1 @PreviousValue = dv.Value
+                FROM DataValues dv
+                INNER JOIN Indicators i ON dv.IndicatorId = i.Id
+                INNER JOIN Locations l ON dv.LocationId = l.Id
+                WHERE i.ParentId = @ParentId
+                  AND l.ParentId = @ParentLocationId
+                  AND l.OrderIndex < @CurrLocationOrder
+                ORDER BY l.OrderIndex DESC, dv.Id DESC;
+            END
         END
     END
 
@@ -353,8 +331,8 @@ BEGIN
     CROSS APPLY (SELECT dbo.fn_GetTopLevelParent(i.Id) AS TopId) AS topinfo
     CROSS APPLY (
         SELECT 
-            dbo.fn_FindPreviousValue(dv.Id) AS PreviousValue,  -- Changed to use DataValues ID
-            dbo.fn_FindLastYearValue(dv.Id, dv.CalendarId) AS LastYearValue
+            dbo.fn_FindPreviousValue(i.Id)     AS PreviousValue,
+            dbo.fn_FindLastYearValue(i.Id, dv.CalendarId) AS LastYearValue
     ) AS prev
     CROSS APPLY (
         -- sum of Value for indicators with same Name, but only within the same top-level group
