@@ -73,6 +73,7 @@ CREATE TABLE [dbo].[DataValues](
     [IndicatorId] [int] NOT NULL,
     [Value] [float] NOT NULL,
     [CalendarId] [int] NULL,
+    [EndCalendarId] [int] NULL,
     [LocationId] [int] NULL,
     [GrowthSinceLastPeriod] [float] NULL,       
     [GrowthSinceLastYearPeriod] [float] NULL,   
